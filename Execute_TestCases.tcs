@@ -1,0 +1,17 @@
+// 1. Clear previous logs and synchronize workspace
+UpdateAll
+
+// 2. Jump to your exact folder 
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/QM_RISE_QA_SeparateExeList"
+
+// 3. Checkout the tree so you have permission to run it
+task "Checkout Tree"
+
+// 5. Run the execution entries
+task "Run"
+
+// 6. Save the results back to the database
+Save
+
+// 7. Check back in so others can see results
+Checkinall

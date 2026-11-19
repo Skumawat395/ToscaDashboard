@@ -1,0 +1,166 @@
+// ===============================================
+// CheckIn All
+// ===============================================
+
+checkinall
+
+// ==============================================
+// Update All
+// ==============================================
+updateall
+
+// ==============================================
+// RISE - QM
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/QM_RISE_QA_SeparateExeList"
+
+// Get Environment
+cn ..
+cn ..
+get Name
+
+// Go back to QM ExecutionList
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/QM_RISE_QA_SeparateExeList"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// RISE - MM
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/MM_RISE_QA_SeparateExeList"
+
+// Get Environment
+cn ..
+cn ..
+get Name
+
+// Go back to MM ExecutionList
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/MM_RISE_QA_SeparateExeList"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// RISE - PM
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
+
+// Get Environment
+cn ..
+cn ..
+get Name
+
+// Go back to PM ExecutionList
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// RISE - PP
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PP_RISE_QA"
+
+// Get Environment
+cn ..
+cn ..
+get Name
+
+// Go back to PP ExecutionList
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PP_RISE_QA"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// RISE - SD
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/SD_RiseIndia_QA/SD_RISE_QA"
+
+// Get Environment
+cn ..
+cn ..
+cn ..
+get Name
+
+// Go back to SD ExecutionList
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/SD_RiseIndia_QA/SD_RISE_QA"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// ROW - MM
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_MM"
+
+// Get Environment
+cn ..
+cn ..
+get Name
+
+// Go back to ROW MM ExecutionList
+JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_MM"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// ROW - SD
+// ==============================================
+
+JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_SD"
+
+// Get Environment
+cn ..
+cn ..
+get Name
+
+// Go back to ROW SD ExecutionList
+JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_SD"
+
+// Get Module
+get Name
+
+// Fetch TestCase Results
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+
+
+// ==============================================
+// GENERATE REPORTS
+// ==============================================
+
+// Call "C:\\Tosca\\Batch\\GenerateTestCaseReport.tcs"
+
+Exit

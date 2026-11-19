@@ -1,0 +1,77 @@
+// ============
+// Update All
+// ============
+updateall
+// ==============================
+// Generate All Modules Reports
+// =============================
+// RISE - QM
+// =============================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/QM_RISE_QA_SeparateExeList"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\RISE_QM_Report.pdf"
+
+// =========================
+// RISE - MM
+// =========================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/MM_RISE_QA_SeparateExeList"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\RISE_MM_Report.pdf"
+
+// =========================
+// RISE - PM
+// =========================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\RISE_PM_Report.pdf" 
+
+// =========================
+// RISE - PP
+// =========================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PP_RISE_QA"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\RISE_PP_Report.pdf"  
+
+// =========================
+// RISE - SD
+// =========================
+
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/SD_RiseIndia_QA/SD_RISE_QA"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\RISE_SD_Report.pdf"  
+
+// =========================
+// ROW - MM
+// =========================
+
+JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_MM"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\ROW_MM_Report.pdf" 
+
+// =========================
+// ROW - SD
+// =========================
+
+JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_SD"
+
+task "Print Report ... ExecutionEntries with detailed logs"
+
+"C:\\Users\\sapna\\OneDrive - THOUGHT FRAMEWORKS\\Himalaya\\Reports\\ReportFromQuery\\ROW_SD_Report.pdf" 
+
+Exit

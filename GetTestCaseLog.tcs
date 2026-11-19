@@ -1,0 +1,10 @@
+//==============================================================
+//Fetch Execution Results, StartTime, EndTime from each Testcase
+//==============================================================
+get Result
+get StartTime
+get EndTime
+
+For ->ExecutedTestCase CallOnEach "C:\\Tosca\\Batch\\GetTestCaseName.tcs"
+
+Exit

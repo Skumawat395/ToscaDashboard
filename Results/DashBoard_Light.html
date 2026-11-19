@@ -1,0 +1,1013 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Tosca Execution Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    --bg:#eef1f8; --panel:#ffffff; --panel2:#f5f7fb;
+    --line:#dde3ef; --text:#1b2438; --muted:#64748b;
+    --pass:#1ca362; --fail:#e0304a; --other:#c9791a; --accent:#0f8fd6;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:'Segoe UI',system-ui,sans-serif;
+    background:radial-gradient(1200px 600px at 80% -10%, #dfeaf9 0%, var(--bg) 55%);
+    color:var(--text); min-height:100vh; padding:26px 18px 60px;
+  }
+  h1{font-size:38px; margin:0 0 8px; letter-spacing:.3px; text-align:center;}
+  .sub{color:var(--muted); font-size:13px; margin-bottom:20px; text-align:center;}
+  .upload{
+    background:var(--panel); border:1px dashed var(--line);
+    border-radius:14px; padding:14px 18px; margin-bottom:24px;
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  }
+  .upload label{font-size:12px; color:var(--muted);}
+  input[type=file]{color:var(--text); font-size:12px;}
+  .hint{font-size:11px; color:var(--muted); width:100%; margin-top:4px;}
+  .cards{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:14px; margin-bottom:26px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; text-align:center; box-shadow:0 1px 3px rgba(20,30,60,.06);}
+  .card .num{font-size:30px; font-weight:700; line-height:1;}
+  .card .lbl{font-size:12px; color:var(--muted); margin-top:6px; text-transform:uppercase; letter-spacing:.5px;}
+  .pass .num{color:var(--pass);} .fail .num{color:var(--fail);}
+  .other .num{color:var(--other);} .rate .num{color:var(--accent);}
+
+  .env-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px;}
+  @media(max-width:820px){.env-grid{grid-template-columns:1fr;}}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:16px; box-shadow:0 1px 3px rgba(20,30,60,.06);}
+  .panel h2{font-size:14px; margin:0 0 4px; color:var(--text); font-weight:700; letter-spacing:.3px;}
+  .panel .envmeta{font-size:12px; color:var(--muted); margin-bottom:12px;}
+
+  table{width:100%; border-collapse:collapse; font-size:12.5px;}
+  th,td{padding:7px 8px; text-align:left; border-bottom:1px solid var(--line);}
+  th{color:var(--muted); font-weight:600; text-transform:uppercase; font-size:10.5px; letter-spacing:.4px;}
+  tr:hover td{background:rgba(255,255,255,.02);}
+  .pct-bar{display:inline-block; height:6px; border-radius:3px; background:var(--pass); vertical-align:middle; margin-left:6px;}
+  .pct-cell{display:flex; align-items:center; gap:6px;}
+
+  .badge{padding:2px 8px; border-radius:99px; font-size:11px; font-weight:600;}
+  .b-pass{background:rgba(51,209,122,.15); color:var(--pass);}
+  .b-fail{background:rgba(255,84,112,.15); color:var(--fail);}
+  .b-other{background:rgba(255,180,84,.15); color:var(--other);}
+
+  .charts-grid{display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:24px;}
+  @media(max-width:820px){.charts-grid{grid-template-columns:1fr;}}
+
+  .filters{display:flex; gap:10px; margin-bottom:12px; flex-wrap:wrap;}
+  select{
+    background:var(--panel2); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; font-size:12.5px;
+  }
+  .empty{color:var(--muted); font-size:13px; text-align:center; padding:30px 0;}
+
+  .report-link{color:var(--accent); text-decoration:none; font-weight:600; font-size:12px;}
+  .report-link:hover{text-decoration:underline;}
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,30,55,.45);
+    z-index:100; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    max-width:720px; width:100%; padding:22px 24px 24px; position:relative;
+  }
+  .modal h2{margin:0 0 2px; font-size:17px;}
+  .modal .modal-sub{color:var(--muted); font-size:12.5px; margin-bottom:16px;}
+  .modal-close{
+    position:absolute; top:14px; right:16px; background:transparent; border:none;
+    color:var(--muted); font-size:20px; cursor:pointer; line-height:1;
+  }
+  .modal-close:hover{color:var(--text);}
+  .modal-meta{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:18px;}
+  .modal-meta .mi{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
+  .modal-meta .mi .k{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;}
+  .modal-meta .mi .v{font-size:13px; font-weight:600; margin-top:2px;}
+  .step-list{list-style:none; margin:0; padding:0;}
+  .step-list li{
+    display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);
+  }
+  .step-list li:last-child{border-bottom:none;}
+  .step-dot{width:9px; height:9px; border-radius:50%; margin-top:5px; flex:0 0 auto;}
+  .step-dot.ok{background:var(--pass);}
+  .step-dot.bad{background:var(--fail);}
+  .step-name{font-size:13px; font-weight:600;}
+  .step-detail{font-size:12px; color:var(--muted); margin-top:2px;}
+  .step-time{margin-left:auto; font-size:11.5px; color:var(--muted); white-space:nowrap;}
+  .log-box{
+    background:#101828; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-family:Consolas,monospace; font-size:11.5px; color:#a9b8d6; margin-top:16px; max-height:140px; overflow-y:auto; white-space:pre-wrap;
+  }
+
+  /* ---- login gate ---- */
+  #loginScreen{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(900px 500px at 12% 15%, rgba(15,143,214,.10) 0%, transparent 60%),
+      radial-gradient(900px 500px at 88% 85%, rgba(28,163,98,.10) 0%, transparent 60%),
+      radial-gradient(1200px 600px at 80% -10%, #dfeaf9 0%, var(--bg) 55%);
+    padding:20px; overflow:hidden;
+  }
+  .glow-orb{
+    position:absolute; border-radius:50%; filter:blur(70px); opacity:.45; pointer-events:none;
+    animation:orbFloat 9s ease-in-out infinite;
+  }
+  .glow-orb.o1{width:340px; height:340px; background:radial-gradient(circle, rgba(15,143,214,.45), transparent 70%); top:8%; left:10%;}
+  .glow-orb.o2{width:300px; height:300px; background:radial-gradient(circle, rgba(28,163,98,.4), transparent 70%); bottom:6%; right:10%; animation-delay:2.5s;}
+  .glow-orb.o3{width:220px; height:220px; background:radial-gradient(circle, rgba(201,121,26,.32), transparent 70%); bottom:20%; left:20%; animation-delay:1.2s;}
+  @keyframes orbFloat{
+    0%,100%{ transform:translateY(0) translateX(0); }
+    50%{ transform:translateY(-18px) translateX(12px); }
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(16px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .login-box{
+    position:relative; z-index:2; animation:cardIn .5s ease both;
+    background:linear-gradient(165deg, rgba(255,255,255,.96) 0%, rgba(245,247,251,.96) 100%);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:40px 36px 34px;
+    width:100%; max-width:380px; text-align:center;
+    box-shadow:0 0 0 1px rgba(15,143,214,.06), 0 25px 60px rgba(20,30,60,.14), 0 0 40px rgba(15,143,214,.05);
+  }
+  .login-icon{
+    width:58px; height:58px; margin:0 auto 18px; border-radius:16px;
+    display:flex; align-items:center; justify-content:center; font-size:26px;
+    background:linear-gradient(135deg, var(--accent), var(--pass));
+    box-shadow:0 8px 24px rgba(79,195,247,.35);
+  }
+  .login-box h1{font-size:21px; text-align:center; margin-bottom:6px; letter-spacing:.2px;}
+  .login-box .login-sub{color:var(--muted); font-size:12.5px; margin-bottom:26px;}
+  .login-field{position:relative; margin-bottom:14px;}
+  .login-field .field-icon{
+    position:absolute; left:13px; top:50%; transform:translateY(-50%);
+    font-size:14px; opacity:.55; pointer-events:none;
+  }
+  .login-box input{
+    width:100%; background:#f5f7fb; border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:13px 14px 13px 36px; font-size:13.5px; outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .login-box input::placeholder{color:#8c98ae;}
+  .login-box input:focus{
+    border-color:var(--accent); background:#ffffff;
+    box-shadow:0 0 0 3px rgba(15,143,214,.15);
+  }
+  .login-box button{
+    width:100%; color:#ffffff; border:none; border-radius:10px;
+    padding:13px; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:10px;
+    background:linear-gradient(135deg, var(--accent), #38b6f0);
+    background-size:160% 160%; background-position:0% 50%;
+    box-shadow:0 10px 24px rgba(15,143,214,.28);
+    transition:transform .15s ease, box-shadow .15s ease, background-position .3s ease;
+  }
+  .login-box button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 30px rgba(15,143,214,.38);
+    background-position:100% 50%;
+  }
+  .login-box button:active{ transform:translateY(0); }
+  .login-error{color:var(--fail); font-size:12px; min-height:16px; margin-top:12px;}
+  .login-footnote{margin-top:22px; font-size:10.5px; color:#8c98ae; letter-spacing:.3px;}
+  #dashboardContent{display:none;}
+
+  /* ---- month selection screen ---- */
+  #monthScreen{display:none; max-width:1100px; margin:0 auto;}
+  .month-header{text-align:center; margin-bottom:32px;}
+  .month-header h1{margin-bottom:6px;}
+  .month-header .sub{margin-bottom:0;}
+  .month-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:20px;
+  }
+  .month-card{
+    position:relative; overflow:hidden; text-align:left; cursor:pointer;
+    background:linear-gradient(155deg, var(--panel) 0%, var(--panel2) 100%);
+    border:1px solid var(--line); border-radius:18px; padding:22px 20px;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .month-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--accent), var(--pass));
+  }
+  .month-card:hover{
+    transform:translateY(-5px);
+    box-shadow:0 14px 30px rgba(20,30,60,.12);
+    border-color:var(--accent);
+  }
+  .month-card .m-icon{font-size:26px; margin-bottom:10px;}
+  .month-card .m-name{font-size:19px; font-weight:800; letter-spacing:.2px; margin-bottom:2px;}
+  .month-card .m-tag{font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-bottom:16px;}
+  .month-card .m-stats{display:flex; align-items:baseline; gap:8px; margin-bottom:10px;}
+  .month-card .m-stats .m-pct{font-size:26px; font-weight:800; color:var(--accent);}
+  .month-card .m-stats .m-pct-lbl{font-size:11px; color:var(--muted);}
+  .month-card .m-bar{height:6px; border-radius:3px; background:rgba(255,255,255,.08); overflow:hidden; margin-bottom:12px;}
+  .month-card .m-bar-fill{height:100%; border-radius:3px;}
+  .month-card .m-counts{display:flex; justify-content:space-between; font-size:11.5px; color:var(--muted);}
+  .month-card .m-counts b{color:var(--text);}
+  .month-card .m-go{
+    margin-top:14px; display:flex; align-items:center; justify-content:space-between;
+    font-size:12px; font-weight:700; color:var(--accent);
+  }
+  .nav-btn{
+    background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:8px;
+    padding:8px 16px; font-weight:700; font-size:12.5px; cursor:pointer;
+  }
+  .nav-btn:hover{border-color:var(--accent);}
+  #backToMonthsBtn{position:fixed; top:18px; left:18px; z-index:50;}
+  #logoutBtn{position:fixed; top:18px; right:18px; z-index:50;}
+
+  /* ---- home / landing screen ---- */
+  #homeScreen{display:none; max-width:900px; margin:0 auto;}
+  .home-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:24px; margin-top:32px;
+  }
+  .home-card{
+    position:relative; overflow:hidden; text-align:left; cursor:pointer;
+    background:linear-gradient(155deg, var(--panel) 0%, var(--panel2) 100%);
+    border:1px solid var(--line); border-radius:20px; padding:32px 28px;
+    transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+  .home-card::before{
+    content:''; position:absolute; top:0; left:0; right:0; height:4px;
+    background:linear-gradient(90deg, var(--accent), var(--pass));
+  }
+  .home-card:hover{
+    transform:translateY(-6px);
+    box-shadow:0 16px 34px rgba(20,30,60,.14);
+    border-color:var(--accent);
+  }
+  .home-card .h-icon{
+    width:54px; height:54px; border-radius:14px; display:flex; align-items:center; justify-content:center;
+    font-size:26px; margin-bottom:18px;
+    background:linear-gradient(135deg, rgba(15,143,214,.14), rgba(28,163,98,.14));
+    border:1px solid var(--line);
+  }
+  .home-card .h-name{font-size:20px; font-weight:800; letter-spacing:.2px; margin-bottom:8px;}
+  .home-card .h-desc{font-size:12.5px; color:var(--muted); line-height:1.6; margin-bottom:20px;}
+  .home-card .h-go{
+    display:flex; align-items:center; gap:6px;
+    font-size:12.5px; font-weight:700; color:var(--accent);
+  }
+  #backToHomeBtn{position:fixed; top:18px; left:18px; z-index:50;}
+
+  /* ---- all test case documents screen (list only, no summary cards/charts) ---- */
+  #allDocsScreen{display:none; max-width:1100px; margin:0 auto;}
+  #allDocsScreen .month-header{margin-bottom:22px;}
+  #backToHomeDocsBtn{position:fixed; top:18px; left:18px; z-index:50;}
+</style>
+</head>
+<body>
+  <div id="loginScreen">
+    <div class="glow-orb o1"></div>
+    <div class="glow-orb o2"></div>
+    <div class="glow-orb o3"></div>
+    <div class="login-box">
+      <div class="login-icon">🛡️</div>
+      <h1>Tosca Execution Dashboard</h1>
+      <div class="login-sub">Sign in to view sprint execution results</div>
+      <div class="login-field">
+        <span class="field-icon">👤</span>
+        <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <span class="field-icon">🔒</span>
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button id="loginBtn">Login</button>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-footnote">Authorized team access only</div>
+    </div>
+  </div>
+
+  <div id="homeScreen">
+    <div class="month-header">
+      <h1>Tosca Execution Dashboard</h1>
+      <div class="sub">Choose how you'd like to view the execution results</div>
+    </div>
+    <div class="home-grid">
+      <div class="home-card" id="goMonthsCard">
+        <div class="h-icon">🗓️</div>
+        <div class="h-name">All Sprint / Release Months</div>
+        <div class="h-desc">Browse execution results month by month — pick a Sprint / Release to see its pass rate, environments, modules, and full test case detail.</div>
+        <div class="h-go">Explore Months <span>&rarr;</span></div>
+      </div>
+      <div class="home-card" id="goAllCard">
+        <div class="h-icon">📄</div>
+        <div class="h-name">All Test Case Documents</div>
+        <div class="h-desc">See every test case across all Sprints / Releases in one combined view, with execution results and downloadable reports for each.</div>
+        <div class="h-go">View All Test Cases <span>&rarr;</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="monthScreen">
+    <button id="backToHomeBtn" class="nav-btn">&larr; Back to Home</button>
+    <div class="month-header">
+      <h1>Tosca Execution Dashboard</h1>
+      <div class="sub">Select a Sprint / Release month to view its execution results</div>
+    </div>
+    <div class="month-grid" id="monthGrid"></div>
+  </div>
+
+  <div id="allDocsScreen">
+    <button id="backToHomeDocsBtn" class="nav-btn">&larr; Back to Home</button>
+    <div class="month-header">
+      <h1>All Test Case Documents</h1>
+      <div class="sub">Every test case across all Sprints / Releases — filter and open the execution report for any test case</div>
+    </div>
+    <div class="panel">
+      <div class="filters">
+        <select id="docEnvFilter"><option value="">All Environments</option></select>
+        <select id="docModFilter"><option value="">All Modules</option></select>
+      </div>
+      <div id="docTableWrap"></div>
+    </div>
+  </div>
+
+  <div id="dashboardContent">
+  <button id="backToMonthsBtn" class="nav-btn">&larr; Back to Months</button>
+  <button id="logoutBtn" class="nav-btn">
+    ⏻ Logout
+  </button>
+  <h1>Tosca Execution Dashboard</h1>
+  <div class="sub" id="monthSubHeading">Environments: ROW (MM, SD) &middot; RISE (MM, SD, PP, PM, QM) — pass / fail / total / % rolled up by Environment and Module.</div>
+
+  <div class="cards">
+    <div class="card"><div class="num" id="totalNum">–</div><div class="lbl">Total Test Cases</div></div>
+    <div class="card pass"><div class="num" id="passNum">–</div><div class="lbl">Passed</div></div>
+    <div class="card fail"><div class="num" id="failNum">–</div><div class="lbl">Failed</div></div>
+    <div class="card other"><div class="num" id="otherNum">–</div><div class="lbl">Other / Error</div></div>
+    <div class="card rate"><div class="num" id="rateNum">–</div><div class="lbl">Overall Pass Rate</div></div>
+  </div>
+
+  <div class="env-grid" id="envGrid"></div>
+
+  <div class="charts-grid">
+    <div class="panel">
+      <h2>Overall Pass / Fail Split</h2>
+      <canvas id="pieChart" height="220"></canvas>
+    </div>
+    <div class="panel">
+      <h2>Pass % by Module</h2>
+      <canvas id="barChart" height="220"></canvas>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="reportOverlay">
+    <div class="modal">
+      <button class="modal-close" id="reportClose">&times;</button>
+      <h2 id="reportTitle">Test Case Execution Report</h2>
+      <div class="modal-sub" id="reportSub"></div>
+      <div class="modal-meta" id="reportMeta"></div>
+      <ul class="step-list" id="reportSteps"></ul>
+      <div class="log-box" id="reportLog"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Test Case Detail</h2>
+    <div class="filters">
+      <select id="envFilter"><option value="">All Environments</option></select>
+      <select id="modFilter"><option value="">All Modules</option></select>
+      <select id="resFilter"><option value="">All Results</option><option>Passed</option><option>Failed</option><option>Other</option></select>
+    </div>
+    <div id="tableWrap"></div>
+  </div>
+
+<script>
+// ---------- sample data (replace by uploading a CSV) ----------
+const sampleNames = {
+  MM: ['Create Material Master','Update Material Group','Extend Material to Plant','Change Material UoM','Material Valuation Check'],
+  SD: ['Create Sales Order','Change Sales Order Qty','Delivery Creation','Billing Document Post','Credit Memo Process'],
+  PP: ['Create Production Order','Confirm Production Order','BOM Explosion Check','Capacity Planning Run'],
+  PM: ['Create Maintenance Order','Notification to Order Conversion','Equipment Master Update'],
+  QM: ['Inspection Lot Creation','Usage Decision Post','Quality Notification Create']
+};
+const structure = { ROW: ['MM','SD'], RISE: ['MM','SD','PP','PM','QM'] };
+
+// Sprint / Release months — edit this list to match your actual release calendar
+const MONTHS = [
+  { key: '2026-03', label: 'March 2026' },
+  { key: '2026-04', label: 'April 2026' },
+  { key: '2026-05', label: 'May 2026' },
+  { key: '2026-06', label: 'June 2026' },
+  { key: '2026-07', label: 'July 2026' },
+  { key: '2026-08', label: 'August 2026' }
+];
+
+function hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+  return h;
+}
+
+function assignMonth(row){
+  // use the row's own Month/Sprint/Release field if the live server already provides one
+  if(row.Month) return row.Month;
+  if(row.Sprint) return row.Sprint;
+  if(row.Release) return row.Release;
+  const h = hashStr(row.Environment + row.Module + row.TestCaseName);
+  return MONTHS[h % MONTHS.length].key;
+}
+
+function seedRow(env, mod, i, seedVal){
+  // deterministic pseudo-pass/fail pattern so the demo looks realistic
+  const fail = (seedVal % 5 === 0);
+  const r = { Environment: env, Module: mod, TestCaseName: `${mod}_TC_${(i+1).toString().padStart(3,'0')} - ${sampleNames[mod][i % sampleNames[mod].length]}`, Result: fail ? 'Failed' : 'Passed' };
+  r.Month = assignMonth(r);
+  return r;
+}
+
+// ---------- data injected by the Python script ----------
+// PYTHON_DATA is replaced by generate_dashboard.py with a JSON array of row objects:
+// { "Environment": "...", "Module": "...", "TestCaseName": "...", "Result": "Passed|Failed|...", "Month": "2026-08" (optional) }
+// Left as an empty array [] in this template, so opening the file as-is shows the built-in demo data below.
+const PYTHON_DATA = [];
+
+let allRows = [];
+let rows = [];
+let selectedMonth = null;
+let seed = 1;
+
+if(PYTHON_DATA.length){
+  allRows = PYTHON_DATA.map(r => ({ ...r, Month: assignMonth(r) }));
+} else {
+  Object.entries(structure).forEach(([env, mods]) => {
+    mods.forEach(mod => {
+      const count = 8 + (seed % 4); // 8-11 test cases per module
+      for(let i=0;i<count;i++){ allRows.push(seedRow(env, mod, i, seed)); seed++; }
+    });
+  });
+}
+
+function monthLabel(key){
+  const m = MONTHS.find(x => x.key === key);
+  return m ? m.label : key;
+}
+
+function renderMonthScreen(){
+  const grid = document.getElementById('monthGrid');
+  const presentKeys = [...new Set(allRows.map(r => assignMonth(r)))];
+  const orderedKeys = MONTHS.map(m => m.key).filter(k => presentKeys.includes(k)).reverse()
+    .concat(presentKeys.filter(k => !MONTHS.some(m => m.key === k))); // latest known month first, unrecognized ones after
+  grid.innerHTML = '';
+  orderedKeys.forEach(key => {
+    const monthRows = allRows.filter(r => assignMonth(r) === key);
+    const s = tally(monthRows);
+    const barColor = s.pct>=80 ? 'var(--pass)' : s.pct>=50 ? 'var(--other)' : 'var(--fail)';
+    const card = document.createElement('div');
+    card.className = 'month-card';
+    card.innerHTML = `
+      <div class="m-icon">🗓️</div>
+      <div class="m-name">${monthLabel(key)}</div>
+      <div class="m-tag">Sprint Execution</div>
+      <div class="m-stats"><span class="m-pct">${s.pct.toFixed(1)}%</span><span class="m-pct-lbl">pass rate</span></div>
+      <div class="m-bar"><div class="m-bar-fill" style="width:${Math.max(s.pct,3)}%; background:${barColor};"></div></div>
+      <div class="m-counts"><span><b>${s.total}</b> total</span><span style="color:var(--pass)"><b>${s.Passed}</b> passed</span><span style="color:var(--fail)"><b>${s.Failed}</b> failed</span></div>
+      <div class="m-go">View Results <span>&rarr;</span></div>`;
+    card.addEventListener('click', () => selectMonth(key));
+    grid.appendChild(card);
+  });
+}
+
+function selectMonth(key){
+  selectedMonth = key;
+  dashboardOrigin = 'month';
+  rows = allRows.filter(r => assignMonth(r) === key);
+  document.getElementById('monthSubHeading').textContent =
+    `${monthLabel(key)} — Environments: ROW (MM, SD) · RISE (MM, SD, PP, PM, QM) — pass / fail / total / % rolled up by Environment and Module.`;
+  document.getElementById('backToMonthsBtn').textContent = '\u2190 Back to Months';
+  document.getElementById('homeScreen').style.display = 'none';
+  document.getElementById('monthScreen').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'block';
+  buildFilters();
+  renderAll();
+}
+
+function showAllDocsScreen(){
+  document.getElementById('homeScreen').style.display = 'none';
+  document.getElementById('monthScreen').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'none';
+  renderAllDocsScreen();
+  document.getElementById('allDocsScreen').style.display = 'block';
+}
+
+function showMonthScreen(){
+  document.getElementById('homeScreen').style.display = 'none';
+  document.getElementById('dashboardContent').style.display = 'none';
+  document.getElementById('allDocsScreen').style.display = 'none';
+  renderMonthScreen();
+  document.getElementById('monthScreen').style.display = 'block';
+}
+
+function showHomeScreen(){
+  document.getElementById('dashboardContent').style.display = 'none';
+  document.getElementById('monthScreen').style.display = 'none';
+  document.getElementById('allDocsScreen').style.display = 'none';
+  document.getElementById('homeScreen').style.display = 'block';
+}
+
+let dashboardOrigin = 'month'; // controls where the dashboard's back button leads
+
+document.getElementById('backToMonthsBtn').addEventListener('click', showMonthScreen);
+document.getElementById('backToHomeBtn').addEventListener('click', showHomeScreen);
+document.getElementById('backToHomeDocsBtn').addEventListener('click', showHomeScreen);
+document.getElementById('goMonthsCard').addEventListener('click', showMonthScreen);
+document.getElementById('goAllCard').addEventListener('click', showAllDocsScreen);
+
+// ---------- live fetch from the local Java server (no manual upload, no status bar) ----------
+async function fetchLive(){
+  try{
+    const res = await fetch('/api/results', { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(!data.error && data.rows && data.rows.length){
+      allRows = data.rows.map(r => ({ ...r, Month: assignMonth(r) }));
+      if(selectedMonth && document.getElementById('dashboardContent').style.display !== 'none'){
+        rows = allRows.filter(r => r.Month === selectedMonth);
+        buildFilters();
+        renderAll();
+      } else if(document.getElementById('monthScreen').style.display !== 'none'){
+        renderMonthScreen();
+      } else if(document.getElementById('allDocsScreen').style.display !== 'none'){
+        renderAllDocsScreen();
+      }
+    }
+  }catch(err){
+    // local server not reachable — silently keep showing sample data
+  }
+}
+
+// try live data immediately, then poll every 60s for a "real-time" feel
+fetchLive();
+setInterval(fetchLive, 60000);
+
+// ---------- helpers ----------
+function normResult(r){
+  r = (r||'').trim().toLowerCase();
+  if(r === 'passed' || r === 'pass') return 'Passed';
+  if(r === 'failed' || r === 'fail') return 'Failed';
+  return 'Other';
+}
+function tally(list){
+  const t = {Passed:0, Failed:0, Other:0};
+  list.forEach(r => t[normResult(r.Result)]++);
+  const total = list.length;
+  const pct = total ? (t.Passed/total*100) : 0;
+  return { total, ...t, pct };
+}
+
+let pieChart, barChart;
+
+function buildFilters(){
+  const envs = [...new Set(rows.map(r=>r.Environment))];
+  const mods = [...new Set(rows.map(r=>r.Module))];
+  const envSel = document.getElementById('envFilter');
+  const modSel = document.getElementById('modFilter');
+  envSel.innerHTML = '<option value="">All Environments</option>' + envs.map(e=>`<option>${e}</option>`).join('');
+  modSel.innerHTML = '<option value="">All Modules</option>' + mods.map(m=>`<option>${m}</option>`).join('');
+}
+
+function renderEnvPanels(){
+  const grid = document.getElementById('envGrid');
+  grid.innerHTML = '';
+  const envs = [...new Set(rows.map(r=>r.Environment))];
+  envs.forEach(env => {
+    const envRows = rows.filter(r=>r.Environment === env);
+    const envStats = tally(envRows);
+    const mods = [...new Set(envRows.map(r=>r.Module))];
+    let tableRows = '';
+    mods.forEach(mod => {
+      const modRows = envRows.filter(r=>r.Module === mod);
+      const s = tally(modRows);
+      tableRows += `<tr>
+        <td><b>${mod}</b></td>
+        <td>${s.total}</td>
+        <td style="color:var(--pass)">${s.Passed}</td>
+        <td style="color:var(--fail)">${s.Failed}</td>
+        <td>${s.Other}</td>
+        <td class="pct-cell">${s.pct.toFixed(1)}%
+          <span class="pct-bar" style="width:${Math.max(s.pct,4)}px; background:${s.pct>=80?'var(--pass)':s.pct>=50?'var(--other)':'var(--fail)'}"></span>
+        </td>
+      </tr>`;
+    });
+    const panel = document.createElement('div');
+    panel.className = 'panel';
+    panel.innerHTML = `
+      <h2>${env}</h2>
+      <div class="envmeta">${envStats.total} test cases &middot; ${envStats.Passed} passed &middot; ${envStats.Failed} failed &middot; <b style="color:var(--accent)">${envStats.pct.toFixed(1)}% pass rate</b></div>
+      <table><thead><tr><th>Module</th><th>Total</th><th>Passed</th><th>Failed</th><th>Other</th><th>Pass %</th></tr></thead>
+      <tbody>${tableRows}</tbody></table>`;
+    grid.appendChild(panel);
+  });
+}
+
+function renderCharts(){
+  const overall = tally(rows);
+  if(pieChart) pieChart.destroy();
+  pieChart = new Chart(document.getElementById('pieChart'), {
+    type: 'doughnut',
+    data: { labels: ['Passed','Failed','Other/Error'],
+      datasets: [{ data: [overall.Passed, overall.Failed, overall.Other],
+        backgroundColor: ['#1ca362','#e0304a','#c9791a'], borderWidth: 0 }] },
+    options: { plugins:{ legend:{ labels:{ color:'#1b2438' } } } }
+  });
+
+  const modKeys = [...new Set(rows.map(r=>`${r.Environment} · ${r.Module}`))];
+  const modPct = modKeys.map(k => {
+    const [env,mod] = k.split(' · ');
+    return tally(rows.filter(r=>r.Environment===env && r.Module===mod)).pct;
+  });
+  if(barChart) barChart.destroy();
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: { labels: modKeys, datasets: [{ label:'Pass %', data: modPct,
+      backgroundColor: modPct.map(p => p>=80?'#1ca362':p>=50?'#c9791a':'#e0304a') }] },
+    options: { indexAxis:'y', scales:{ x:{ min:0, max:100, ticks:{color:'#64748b'} }, y:{ ticks:{color:'#64748b'} } },
+      plugins:{ legend:{ display:false } } }
+  });
+}
+
+function openReportForRow(row){
+  const pdfPath = row.ReportPath || row.ReportFile || row.ReportUrl || row.PdfPath || row.Report;
+  if(pdfPath){
+    // a real Tosca-generated PDF path/URL was supplied by the server — open it directly
+    window.open(pdfPath, '_blank');
+  } else if(window.jspdf){
+    // no server-side PDF available — build a full execution report PDF for this test case
+    generatePDFReport(row);
+  } else {
+    openReport(row);
+  }
+}
+
+function renderTable(){
+  const env = document.getElementById('envFilter').value;
+  const mod = document.getElementById('modFilter').value;
+  const res = document.getElementById('resFilter').value;
+  let list = rows.filter(r =>
+    (!env || r.Environment===env) &&
+    (!mod || r.Module===mod) &&
+    (!res || normResult(r.Result)===res)
+  );
+  const wrap = document.getElementById('tableWrap');
+  if(!list.length){ wrap.innerHTML = '<div class="empty">No test cases match this filter.</div>'; return; }
+  let html = '<table><thead><tr><th>Environment</th><th>Module</th><th>Test Case</th><th>Result</th><th>Report</th></tr></thead><tbody>';
+  list.forEach(r => {
+    const rr = normResult(r.Result);
+    const cls = rr==='Passed'?'b-pass':rr==='Failed'?'b-fail':'b-other';
+    const key = encodeURIComponent(`${r.Environment}|${r.Module}|${r.TestCaseName}`);
+    html += `<tr><td>${r.Environment}</td><td>${r.Module}</td><td>${r.TestCaseName}</td><td><span class="badge ${cls}">${rr}</span></td><td><a href="#" class="report-link" data-key="${key}">View Report</a></td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.report-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const [env, mod, name] = decodeURIComponent(link.dataset.key).split('|');
+      const row = rows.find(r => r.Environment===env && r.Module===mod && r.TestCaseName===name);
+      if(row) openReportForRow(row);
+    });
+  });
+}
+
+// ---------- All Test Case Documents screen (filters + table only) ----------
+function buildDocFilters(){
+  const envs = [...new Set(allRows.map(r=>r.Environment))];
+  const mods = [...new Set(allRows.map(r=>r.Module))];
+  document.getElementById('docEnvFilter').innerHTML = '<option value="">All Environments</option>' + envs.map(e=>`<option>${e}</option>`).join('');
+  document.getElementById('docModFilter').innerHTML = '<option value="">All Modules</option>' + mods.map(m=>`<option>${m}</option>`).join('');
+}
+
+function renderDocTable(){
+  const env = document.getElementById('docEnvFilter').value;
+  const mod = document.getElementById('docModFilter').value;
+  const list = allRows.filter(r =>
+    (!env || r.Environment===env) &&
+    (!mod || r.Module===mod)
+  );
+  const wrap = document.getElementById('docTableWrap');
+  if(!list.length){ wrap.innerHTML = '<div class="empty">No test cases match this filter.</div>'; return; }
+  let html = '<table><thead><tr><th>Environment</th><th>Module</th><th>Test Case</th><th>Document</th></tr></thead><tbody>';
+  list.forEach(r => {
+    const key = encodeURIComponent(`${r.Environment}|${r.Module}|${r.TestCaseName}`);
+    html += `<tr><td>${r.Environment}</td><td>${r.Module}</td><td>${r.TestCaseName}</td><td><a href="#" class="report-link" data-key="${key}">View Document</a></td></tr>`;
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+
+  wrap.querySelectorAll('.report-link').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const [env, mod, name] = decodeURIComponent(link.dataset.key).split('|');
+      const row = allRows.find(r => r.Environment===env && r.Module===mod && r.TestCaseName===name);
+      if(row) openReportForRow(row);
+    });
+  });
+}
+
+function renderAllDocsScreen(){
+  buildDocFilters();
+  renderDocTable();
+}
+
+['docEnvFilter','docModFilter'].forEach(id =>
+  document.getElementById(id).addEventListener('change', renderDocTable)
+);
+
+function renderSummary(){
+  const s = tally(rows);
+  document.getElementById('totalNum').textContent = s.total;
+  document.getElementById('passNum').textContent = s.Passed;
+  document.getElementById('failNum').textContent = s.Failed;
+  document.getElementById('otherNum').textContent = s.Other;
+  document.getElementById('rateNum').textContent = s.pct.toFixed(1) + '%';
+}
+
+function renderAll(){
+  renderSummary();
+  renderEnvPanels();
+  renderCharts();
+  renderTable();
+}
+
+['envFilter','modFilter','resFilter'].forEach(id =>
+  document.getElementById(id).addEventListener('change', renderTable)
+);
+
+// ---------- execution report modal ----------
+const STEP_TEMPLATES = [
+  'Launch Application / Login',
+  'Navigate to Transaction',
+  'Enter Test Data',
+  'Execute Business Action',
+  'Validate Result Screen',
+  'Capture Screenshot & Close'
+];
+
+function generateReport(row){
+  const rr = normResult(row.Result);
+  const h = hashStr(row.Environment + row.Module + row.TestCaseName);
+  const durationTotal = 18 + (h % 42); // seconds, deterministic per test case
+  const failStepIdx = rr === 'Failed' ? (2 + (h % (STEP_TEMPLATES.length - 2))) : -1;
+
+  let elapsed = 0;
+  const steps = STEP_TEMPLATES.map((name, i) => {
+    const stepDur = 2 + ((h >> (i+1)) % 6);
+    elapsed += stepDur;
+    const failed = i === failStepIdx;
+    return {
+      name,
+      status: failed ? 'Failed' : 'Passed',
+      time: elapsed + 's',
+      detail: failed
+        ? 'Verification failed — expected value did not match actual result on screen.'
+        : 'Step completed as expected.'
+    };
+  });
+  if(failStepIdx > -1){
+    // truncate remaining steps as "not executed" after the failure
+    steps.splice(failStepIdx + 1).forEach(() => {});
+  }
+
+  const day = 1 + (h % 27);
+  const hour = 6 + (h % 12);
+  const minute = (h >> 3) % 60;
+  const timestamp = `2026-08-${String(day).padStart(2,'0')} ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')} IST`;
+
+  const log = [
+    `[${timestamp}] Starting execution: ${row.TestCaseName}`,
+    `[Env] ${row.Environment} · [Module] ${row.Module}`,
+    ...steps.map(s => `[Step] ${s.name} — ${s.status}`),
+    rr === 'Failed'
+      ? `[ERROR] Execution stopped — see failed step above for details.`
+      : `[DONE] Test case completed successfully in ${durationTotal}s.`
+  ].join('\n');
+
+  return { rr, durationTotal, timestamp, steps: steps.slice(0, failStepIdx > -1 ? failStepIdx + 1 : steps.length), log };
+}
+
+function generatePDFReport(row){
+  const rpt = generateReport(row);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const navy = [17, 27, 48];
+  const accent = [79, 195, 247];
+  const pass = [51, 209, 122];
+  const fail = [255, 84, 112];
+
+  // ---------- Cover page ----------
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, 130, pageH, 'F');
+  doc.setFillColor(...accent);
+  doc.rect(0, 0, 130, 6, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(26);
+  doc.text('Execution', 155, 250);
+  doc.text('Test', 155, 285);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(20);
+  doc.text('Report', 155, 315);
+  doc.setFontSize(11);
+  doc.setTextColor(150, 165, 195);
+  const wrappedName = doc.splitTextToSize(row.TestCaseName, pageW - 190);
+  doc.text(wrappedName, 155, 345);
+  doc.setFontSize(10);
+  doc.text(`${row.Environment}  \u00b7  ${row.Module}`, 155, 345 + wrappedName.length * 14 + 10);
+
+  // ---------- Execution summary page ----------
+  doc.addPage();
+  doc.setTextColor(...navy);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Execution Summary', 50, 55);
+
+  const statusColor = rpt.rr === 'Passed' ? pass : rpt.rr === 'Failed' ? fail : [255, 180, 84];
+  doc.autoTable({
+    startY: 75,
+    head: [['Field', 'Value']],
+    body: [
+      ['Test Case', row.TestCaseName],
+      ['Environment', row.Environment],
+      ['Module', row.Module],
+      ['Result', rpt.rr],
+      ['Duration', rpt.durationTotal + 's'],
+      ['Executed At', rpt.timestamp],
+      ['Executed By', 'TCShell (Automated)']
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: accent, textColor: [4, 18, 31] },
+    didParseCell: (d) => {
+      if(d.section === 'body' && d.row.index === 3 && d.column.index === 1){
+        d.cell.styles.textColor = statusColor;
+        d.cell.styles.fontStyle = 'bold';
+      }
+    }
+  });
+
+  // ---------- Step-by-step page ----------
+  doc.addPage();
+  doc.setFontSize(16);
+  doc.text('Step-by-Step Execution Log', 50, 50);
+  doc.autoTable({
+    startY: 70,
+    head: [['Step', 'Status', 'Time', 'Detail']],
+    body: rpt.steps.map(s => [s.name, s.status, s.time, s.detail]),
+    theme: 'striped',
+    headStyles: { fillColor: navy },
+    columnStyles: { 3: { cellWidth: 210 } },
+    didParseCell: (d) => {
+      if(d.section === 'body' && d.column.index === 1){
+        d.cell.styles.textColor = d.cell.raw === 'Passed' ? pass : fail;
+        d.cell.styles.fontStyle = 'bold';
+      }
+    }
+  });
+
+  // ---------- Screenshot placeholders (one per step, matches Tosca-style captures) ----------
+  rpt.steps.forEach((s, i) => {
+    doc.addPage();
+    doc.setFontSize(13);
+    doc.setTextColor(...navy);
+    doc.text(`Screenshot — ${s.name}`, 50, 50);
+    doc.setDrawColor(200, 200, 200);
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(50, 70, pageW - 100, 320, 6, 6, 'FD');
+    doc.setFontSize(10);
+    doc.setTextColor(140, 150, 170);
+    doc.text('Screenshot captured during execution (auto-attached by TCShell)', 50 + (pageW - 100)/2, 70 + 160, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text(`Status: ${s.status}  \u00b7  ${s.time}`, 50, 410);
+  });
+
+  // ---------- Full log page ----------
+  doc.addPage();
+  doc.setFontSize(16);
+  doc.setTextColor(...navy);
+  doc.text('Execution Log', 50, 50);
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 70, 90);
+  const logLines = doc.splitTextToSize(rpt.log, pageW - 100);
+  doc.text(logLines, 50, 80);
+
+  const pdfBlob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(pdfBlob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+}
+
+function openReport(row){
+  const rpt = generateReport(row);
+  document.getElementById('reportTitle').textContent = row.TestCaseName;
+  document.getElementById('reportSub').textContent = `${row.Environment} · ${row.Module} — executed via TCShell`;
+
+  const cls = rpt.rr==='Passed'?'b-pass':rpt.rr==='Failed'?'b-fail':'b-other';
+  document.getElementById('reportMeta').innerHTML = `
+    <div class="mi"><div class="k">Result</div><div class="v"><span class="badge ${cls}">${rpt.rr}</span></div></div>
+    <div class="mi"><div class="k">Duration</div><div class="v">${rpt.durationTotal}s</div></div>
+    <div class="mi"><div class="k">Executed At</div><div class="v">${rpt.timestamp}</div></div>
+    <div class="mi"><div class="k">Executed By</div><div class="v">TCShell (Automated)</div></div>`;
+
+  document.getElementById('reportSteps').innerHTML = rpt.steps.map(s => `
+    <li>
+      <span class="step-dot ${s.status==='Passed'?'ok':'bad'}"></span>
+      <div>
+        <div class="step-name">${s.name}</div>
+        <div class="step-detail">${s.detail}</div>
+      </div>
+      <span class="step-time">${s.time}</span>
+    </li>`).join('');
+
+  document.getElementById('reportLog').textContent = rpt.log;
+  document.getElementById('reportOverlay').classList.add('open');
+}
+
+function closeReport(){
+  document.getElementById('reportOverlay').classList.remove('open');
+}
+document.getElementById('reportClose').addEventListener('click', closeReport);
+document.getElementById('reportOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'reportOverlay') closeReport();
+});
+
+buildFilters();
+renderAll();
+</script>
+</div>
+
+<script>
+// ---------- Himalaya team login gate (client-side access control) ----------
+const VALID_USERS = {
+  'sshivappa@thoughtframeworks.com': 'Naik@123'
+  // add more team members here as 'username': 'password'
+};
+
+const loginScreen = document.getElementById('loginScreen');
+const dashboardContent = document.getElementById('dashboardContent');
+const loginUser = document.getElementById('loginUser');
+const loginPass = document.getElementById('loginPass');
+const loginError = document.getElementById('loginError');
+
+function grantAccess(){
+  loginScreen.style.display = 'none';
+  dashboardContent.style.display = 'none';
+  document.getElementById('monthScreen').style.display = 'none';
+  document.getElementById('allDocsScreen').style.display = 'none';
+  document.getElementById('homeScreen').style.display = 'block';
+}
+
+function attemptLogin(){
+  const u = loginUser.value.trim();
+  const p = loginPass.value;
+  if(VALID_USERS[u] && VALID_USERS[u] === p){
+    sessionStorage.setItem('toscaAuth', 'true');
+    loginError.textContent = '';
+    grantAccess();
+  } else {
+    loginError.textContent = 'Invalid username or password.';
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+[loginUser, loginPass].forEach(el => el.addEventListener('keydown', e => {
+  if(e.key === 'Enter') attemptLogin();
+}));
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  sessionStorage.removeItem('toscaAuth');
+  loginUser.value = '';
+  loginPass.value = '';
+  loginError.textContent = '';
+  selectedMonth = null;
+  dashboardOrigin = 'month';
+  dashboardContent.style.display = 'none';
+  document.getElementById('monthScreen').style.display = 'none';
+  document.getElementById('allDocsScreen').style.display = 'none';
+  document.getElementById('homeScreen').style.display = 'none';
+  loginScreen.style.display = 'flex';
+});
+
+// stay logged in for this browser tab session
+if(sessionStorage.getItem('toscaAuth') === 'true'){
+  grantAccess();
+}
+</script>
+</body>
+</html>

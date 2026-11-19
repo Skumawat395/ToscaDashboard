@@ -1,0 +1,9 @@
+//=======================================
+//Fecth TestCase Name from Each testcases
+//=======================================
+
+get Name
+get CreatedBy
+get CreatedAt
+
+Exit

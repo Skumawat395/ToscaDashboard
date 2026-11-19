@@ -1,0 +1,25 @@
+//=====================================================
+// Fetch Latest Execution Log and Process Test Case Logs
+//=====================================================
+
+//=====================================================
+// Fetch latest result for each month
+//=====================================================
+
+For "->UNION(
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-10-2026 00:00:00\") AND (StartTime<\"01-11-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-09-2026 00:00:00\") AND (StartTime<\"01-10-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-08-2026 00:00:00\") AND (StartTime<\"01-09-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-07-2026 00:00:00\") AND (StartTime<\"01-08-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-06-2026 00:00:00\") AND (StartTime<\"01-07-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-05-2026 00:00:00\") AND (StartTime<\"01-06-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-04-2026 00:00:00\") AND (StartTime<\"01-05-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-03-2026 00:00:00\") AND (StartTime<\"01-04-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-02-2026 00:00:00\") AND (StartTime<\"01-03-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-01-2026 00:00:00\") AND (StartTime<\"01-02-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-12-2025 00:00:00\") AND (StartTime<\"01-01-2026 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-11-2025 00:00:00\") AND (StartTime<\"01-12-2025 00:00:00\")],\"-StartTime\"),1),
+->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-10-2025 00:00:00\") AND (StartTime<\"01-11-2025 00:00:00\")],\"-StartTime\"),1)
+)" CallOnEach "C:\\Tosca\\Batch\\GetTestCaseLog.tcs"
+
+Exit

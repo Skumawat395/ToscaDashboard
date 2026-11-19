@@ -1,0 +1,8 @@
+// Navigate to QM_executionListsFolder
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/QM_RISE_QA_SeparateExeList"
+
+// Checkout
+task "CheckOut"
+
+// Execute QM_Testcases
+task "Run"
