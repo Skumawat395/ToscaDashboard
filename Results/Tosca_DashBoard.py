@@ -1,14 +1,20 @@
-from openpyxl import Workbook
+from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment, Border, Side
 from datetime import datetime
 from pathlib import Path
+from result_store import (
+    DATABASE_FILE,
+    get_execution_results,
+    save_execution_run,
+    sync_pending_runs,
+)
 
 
 # ============================================================
 # FILE PATHS
 # ============================================================
 
-BASE_DIR = Path(r"C:\Tosca\Batch\Results")
+BASE_DIR = Path(__file__).resolve().parent
 
 INPUT_FILE = BASE_DIR / "RawData.txt"
 OUTPUT_FILE = BASE_DIR / "ExecutionResult.xlsx"
@@ -477,6 +483,64 @@ def create_execution_result(
 ):
 
     print()
+def import_legacy_excel_if_needed():
+    if get_execution_results(DATABASE_FILE) or not OUTPUT_FILE.exists():
+        return 0
+
+    workbook = load_workbook(OUTPUT_FILE, read_only=True, data_only=True)
+    try:
+        worksheet = (
+            workbook["ExecutionResult"]
+            if "ExecutionResult" in workbook.sheetnames
+            else workbook.active
+        )
+        iterator = worksheet.iter_rows(values_only=True)
+        headers = next(iterator, None)
+        if headers is None:
+            return 0
+        column_indexes = {
+            str(name).strip(): index
+            for index, name in enumerate(headers)
+            if name is not None
+        }
+        missing = [
+            name for name in HEADERS[:5] if name not in column_indexes
+        ]
+        if missing:
+            raise ValueError(
+                "Cannot import legacy workbook; missing columns: "
+                + ", ".join(missing)
+            )
+
+        records = []
+        for values in iterator:
+            def value(column):
+                index = column_indexes.get(column)
+                return values[index] if index is not None and index < len(values) else None
+
+            testcase = value("TestCase_Name")
+            if not testcase:
+                continue
+            records.append(
+                {
+                    "Environment_Name": value("Environment_Name") or "",
+                    "Module_Name": value("Module_Name") or "",
+                    "TestCase_Name": testcase,
+                    "Result": value("Result") or "Unknown",
+                    "StartTime": value("StartTime"),
+                    "EndTime": value("EndTime"),
+                    "CreatedBy": value("CreatedBy"),
+                    "CreatedAt": value("CreatedAt"),
+                }
+            )
+    finally:
+        workbook.close()
+
+    if records:
+        save_execution_run(records, DATABASE_FILE)
+        print(f"Imported {len(records)} legacy rows from Excel into local SQLite.")
+    return len(records)
+
     print("=" * 70)
     print("CREATING EXECUTION RESULT")
     print("=" * 70)
@@ -721,14 +785,14 @@ def main():
             records
         )
 
+        import_legacy_excel_if_needed()
+
         # ====================================================
-        # STEP 4: CREATE EXCEL
+        # STEP 4: SAVE LOCALLY AND SYNC TO SUPABASE
         # ====================================================
 
-        create_execution_result(
-            records,
-            OUTPUT_FILE
-        )
+        run_id = save_execution_run(records, DATABASE_FILE)
+        cloud_sync = sync_pending_runs()
 
         # ====================================================
         # COMPLETE
@@ -741,7 +805,9 @@ def main():
 
         print()
         print(f"Input  : {INPUT_FILE}")
-        print(f"Output : {OUTPUT_FILE}")
+        print(f"Local DB: {BASE_DIR / 'tosca_results.sqlite3'}")
+        print(f"Run ID : {run_id}")
+        print(f"Cloud sync: {cloud_sync['status']} ({cloud_sync['synced_runs']} run(s))")
         print(f"Rows   : {len(records)}")
         print()
 

@@ -20,6 +20,6 @@ For "->UNION(
 ->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-12-2025 00:00:00\") AND (StartTime<\"01-01-2026 00:00:00\")],\"-StartTime\"),1),
 ->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-11-2025 00:00:00\") AND (StartTime<\"01-12-2025 00:00:00\")],\"-StartTime\"),1),
 ->SUBSET(->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs[(StartTime>=\"01-10-2025 00:00:00\") AND (StartTime<\"01-11-2025 00:00:00\")],\"-StartTime\"),1)
-)" CallOnEach "C:\\Tosca\\Batch\\GetTestCaseLog.tcs"
+)" CallOnEach "ToscaScripts\\GetTestCaseLog.tcs"
 
 Exit

@@ -1,106 +1,57 @@
-"""Temporary Tosca dashboard server backed by the existing Excel workbook.
+"""Tosca dashboard server backed by local SQLite with Supabase sync.
 
 Place this file in the same folder as:
   - DashBoard_Light.html
-  - ExecutionResult.xlsx
+    - tosca_results.sqlite3
 
-Install:  pip install flask pandas openpyxl
+Install:  pip install -r requirements.txt
 Run:      python server.py
 Open:     http://127.0.0.1:5000
 
-This is a validation bridge only. It reads Excel on each API request so that
-changes to the workbook are reflected without restarting the server. It does
-not connect to SQL Server yet.
+Dashboard rows are read from Supabase by default (RESULTS_SOURCE=auto), falling
+back to local SQLite when the cloud is unavailable. Set RESULTS_SOURCE=local or
+RESULTS_SOURCE=supabase to force one source.
 """
 
 from __future__ import annotations
 
 import os
-from datetime import date, datetime
+import hmac
+import secrets
+from functools import wraps
 from pathlib import Path
+
+from dotenv import load_dotenv
+from flask import Flask, jsonify, redirect, request, send_file, session, url_for
 from typing import Any
 
-import pandas as pd
-from flask import Flask, jsonify, send_file
+from result_store import DATABASE_FILE, get_dashboard_results, sync_pending_runs, sync_status
 
 BASE_DIR = Path(__file__).resolve().parent
-EXCEL_FILE = Path(os.getenv("TOSCA_EXCEL_FILE", BASE_DIR / "ExecutionResult.xlsx"))
-DASHBOARD_FILE = Path(os.getenv("TOSCA_DASHBOARD_FILE", BASE_DIR / "DashBoard_Light.html"))
-SHEET_NAME = os.getenv("TOSCA_SHEET_NAME", "ExecutionResult")
+load_dotenv(BASE_DIR / ".env")
 
-REQUIRED_COLUMNS = [
-    "Environment_Name",
-    "Module_Name",
-    "TestCase_Name",
-    "Result",
-    "StartTime",
-]
-OPTIONAL_COLUMNS = ["EndTime", "CreatedBy", "CreatedAt"]
+DASHBOARD_FILE = Path(os.getenv("TOSCA_DASHBOARD_FILE", BASE_DIR / "DashBoard_Light.html"))
+DASHBOARD_USERNAME = os.getenv("DASHBOARD_USERNAME", "")
+DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")
 
 app = Flask(__name__)
+app.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_bytes(32)
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 
-def json_safe(value: Any) -> Any:
-    """Convert pandas/numpy/date values into JSON-serializable Python values."""
-    if pd.isna(value):
-        return None
-    if isinstance(value, (pd.Timestamp, datetime, date)):
-        return value.isoformat()
-    if hasattr(value, "item"):
-        try:
-            return value.item()
-        except Exception:
-            pass
-    return value
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if not session.get("dashboard_authenticated"):
+            return jsonify({"error": "Authentication required."}), 401
+        return view(*args, **kwargs)
+
+    return wrapped
 
 
 def load_execution_results() -> list[dict[str, Any]]:
-    if not EXCEL_FILE.exists():
-        raise FileNotFoundError(
-            f"Excel workbook not found: {EXCEL_FILE}. Place it beside server.py "
-            "or set TOSCA_EXCEL_FILE to its full path."
-        )
-
-    df = pd.read_excel(EXCEL_FILE, sheet_name=SHEET_NAME, engine="openpyxl")
-    missing = [column for column in REQUIRED_COLUMNS if column not in df.columns]
-    if missing:
-        raise ValueError(
-            f"Missing required Excel columns: {', '.join(missing)}. "
-            f"Available columns: {', '.join(map(str, df.columns))}"
-        )
-
-    # Normalize dates before deriving the month; do not use a synthetic month.
-    df["StartTime"] = pd.to_datetime(df["StartTime"], errors="coerce")
-    if "EndTime" in df.columns:
-        df["EndTime"] = pd.to_datetime(df["EndTime"], errors="coerce")
-    if "CreatedAt" in df.columns:
-        df["CreatedAt"] = pd.to_datetime(df["CreatedAt"], errors="coerce")
-
-    # Keep the source column names intact for compatibility with the existing
-    # Tosca Python script and dashboard data model. Add Month for grouping.
-    if "Month" not in df.columns:
-        df["Month"] = df["StartTime"].dt.strftime("%B %Y")
-
-    # Add lowercase aliases as well, to make the API easier to consume from JS.
-    aliases = {
-        "environment": "Environment_Name",
-        "module": "Module_Name",
-        "testCase": "TestCase_Name",
-        "result": "Result",
-        "startTime": "StartTime",
-        "endTime": "EndTime",
-        "createdBy": "CreatedBy",
-        "createdAt": "CreatedAt",
-        "month": "Month",
-    }
-
-    rows: list[dict[str, Any]] = []
-    for record in df.to_dict(orient="records"):
-        row = {str(k): json_safe(v) for k, v in record.items()}
-        for alias, source in aliases.items():
-            if source in row:
-                row[alias] = row[source]
-        rows.append(row)
+    rows, _source = get_dashboard_results()
     return rows
 
 
@@ -116,12 +67,58 @@ def dashboard():
     return send_file(DASHBOARD_FILE)
 
 
+@app.get("/execution")
+def execution_dashboard():
+    if not session.get("dashboard_authenticated"):
+        return redirect(url_for("dashboard", next="/execution"))
+
+    execution_file = BASE_DIR / "ToscaExecutionDashboard.html"
+    if not execution_file.exists():
+        return "Execution dashboard not found. Run ToscaDB.py first.", 404
+
+    response = send_file(execution_file)
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+@app.post("/api/login")
+def api_login():
+    if not DASHBOARD_USERNAME or not DASHBOARD_PASSWORD:
+        return jsonify({"error": "Dashboard credentials are not configured."}), 503
+
+    credentials = request.get_json(silent=True) or {}
+    username = credentials.get("username", "")
+    password = credentials.get("password", "")
+    if not isinstance(username, str) or not isinstance(password, str):
+        return jsonify({"error": "Invalid username or password."}), 401
+
+    if hmac.compare_digest(username.strip(), DASHBOARD_USERNAME) and hmac.compare_digest(
+        password, DASHBOARD_PASSWORD
+    ):
+        session["dashboard_authenticated"] = True
+        return jsonify({"authenticated": True})
+
+    return jsonify({"error": "Invalid username or password."}), 401
+
+
+@app.get("/api/auth-status")
+def api_auth_status():
+    return jsonify({"authenticated": bool(session.get("dashboard_authenticated"))})
+
+
+@app.post("/api/logout")
+def api_logout():
+    session.clear()
+    return jsonify({"authenticated": False})
+
+
 @app.get("/api/results")
+@login_required
 def api_results():
-    """Return all workbook rows as a JSON array for the dashboard."""
+    """Return testcase rows from Supabase (or local SQLite per RESULTS_SOURCE)."""
     try:
-        rows = load_execution_results()
-        response = jsonify(rows)
+        rows, source = get_dashboard_results()
+        response = jsonify({"rows": rows, "source": source})
         response.headers["Cache-Control"] = "no-store"
         return response
     except FileNotFoundError as exc:
@@ -136,15 +133,24 @@ def health():
     return jsonify(
         {
             "status": "ok",
-            "mode": "excel-validation",
-            "excel_file": str(EXCEL_FILE),
+            "mode": "local-sqlite-with-supabase-sync",
+            "results_source": os.getenv("RESULTS_SOURCE", "auto"),
+            "database_file": str(DATABASE_FILE),
             "dashboard_file": str(DASHBOARD_FILE),
-            "sheet": SHEET_NAME,
+            **sync_status(),
         }
     )
 
 
+@app.post("/api/sync")
+@login_required
+def api_sync():
+    """Retry cloud upload for locally saved runs waiting to sync."""
+    return jsonify({**sync_pending_runs(), **sync_status()})
+
+
 @app.get("/api/summary")
+@login_required
 def summary():
     """Small diagnostic summary to verify workbook data before UI integration."""
     try:
@@ -181,7 +187,9 @@ def summary():
 
 
 if __name__ == "__main__":
-    print(f"Excel workbook : {EXCEL_FILE}")
+    print(f"Local database : {DATABASE_FILE}")
     print(f"Dashboard HTML: {DASHBOARD_FILE}")
+    print(f"Cloud sync     : {sync_status()}")
+    print(f"Results source : {os.getenv('RESULTS_SOURCE', 'auto')}")
     print("Open dashboard : http://127.0.0.1:5000")
     app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=True)

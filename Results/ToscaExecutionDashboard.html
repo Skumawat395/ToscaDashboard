@@ -436,7 +436,7 @@ let selectedMonth = null;
 let seed = 1;
 
 if(PYTHON_DATA.length){
-  // REAL DATA ONLY - loaded from ExecutionResult.xlsx
+    // REAL DATA ONLY - loaded from local SQLite records
   allRows = PYTHON_DATA.map(r => ({ ...r, Month: r.Month }));
 } else {
   // Never generate demo/sample records.
@@ -458,7 +458,7 @@ function monthLabel(key){
 function renderMonthScreen(){
   const grid = document.getElementById('monthGrid');
   const presentKeys = [...new Set(allRows.map(r => r.Month).filter(Boolean))];
-  // Use every month present in ExecutionResult.xlsx, newest first.
+    // Use every month present in SQLite, newest first.
   const orderedKeys = presentKeys.sort((a, b) => b.localeCompare(a));
   grid.innerHTML = '';
   orderedKeys.forEach(key => {
@@ -527,11 +527,26 @@ document.getElementById('goAllCard').addEventListener('click', showAllDocsScreen
 
 // ---------- live fetch from the local Java server (no manual upload, no status bar) ----------
 async function fetchLive(){
-  // Disabled intentionally.
-  // This dashboard is generated from ExecutionResult.xlsx.
+  try{
+    const res = await fetch('/api/results', { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(!data.error && data.rows && data.rows.length){
+      allRows = data.rows.map(r => ({ ...r, Month: assignMonth(r) }));
+      if(selectedMonth && document.getElementById('dashboardContent').style.display !== 'none'){
+        rows = allRows.filter(r => r.Month === selectedMonth);
+        buildFilters();
+        renderAll();
+      } else if(document.getElementById('monthScreen').style.display !== 'none'){
+        renderMonthScreen();
+      } else if(document.getElementById('allDocsScreen').style.display !== 'none'){
+        renderAllDocsScreen();
+      }
+    }
+  }catch(err){
+    // local server not reachable — silently keep showing sample data
+  }
 }
-
-// Live API disabled - Excel data is the single source.
 
 // ---------- helpers ----------
 function normResult(r){
@@ -930,17 +945,13 @@ renderAll();
 </div>
 
 <script>
-// ---------- Himalaya team login gate (client-side access control) ----------
-const VALID_USERS = {
-  'sshivappa@thoughtframeworks.com': 'Naik@123'
-  // add more team members here as 'username': 'password'
-};
-
+// ---------- server-verified dashboard login ----------
 const loginScreen = document.getElementById('loginScreen');
 const dashboardContent = document.getElementById('dashboardContent');
 const loginUser = document.getElementById('loginUser');
 const loginPass = document.getElementById('loginPass');
 const loginError = document.getElementById('loginError');
+let liveRefreshTimer = null;
 
 function grantAccess(){
   loginScreen.style.display = 'none';
@@ -948,17 +959,33 @@ function grantAccess(){
   document.getElementById('monthScreen').style.display = 'none';
   document.getElementById('allDocsScreen').style.display = 'none';
   document.getElementById('homeScreen').style.display = 'block';
+  if(!liveRefreshTimer){
+    fetchLive();
+    liveRefreshTimer = setInterval(fetchLive, 60000);
+  }
 }
 
-function attemptLogin(){
-  const u = loginUser.value.trim();
-  const p = loginPass.value;
-  if(VALID_USERS[u] && VALID_USERS[u] === p){
-    sessionStorage.setItem('toscaAuth', 'true');
-    loginError.textContent = '';
+async function attemptLogin(){
+  loginError.textContent = '';
+  try{
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: loginUser.value.trim(), password: loginPass.value})
+    });
+    const result = await response.json();
+    if(!response.ok){
+      loginError.textContent = result.error || 'Invalid username or password.';
+      return;
+    }
+    loginPass.value = '';
+    if(new URLSearchParams(window.location.search).get('next') === '/execution'){
+      window.location.assign('/execution');
+      return;
+    }
     grantAccess();
-  } else {
-    loginError.textContent = 'Invalid username or password.';
+  }catch(error){
+    loginError.textContent = 'Unable to reach the dashboard server.';
   }
 }
 
@@ -967,8 +994,16 @@ document.getElementById('loginBtn').addEventListener('click', attemptLogin);
   if(e.key === 'Enter') attemptLogin();
 }));
 
-document.getElementById('logoutBtn').addEventListener('click', () => {
-  sessionStorage.removeItem('toscaAuth');
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/logout', {method: 'POST'}).catch(() => {});
+  if(window.location.pathname === '/execution'){
+    window.location.assign('/');
+    return;
+  }
+  if(liveRefreshTimer){
+    clearInterval(liveRefreshTimer);
+    liveRefreshTimer = null;
+  }
   loginUser.value = '';
   loginPass.value = '';
   loginError.textContent = '';
@@ -981,10 +1016,10 @@ document.getElementById('logoutBtn').addEventListener('click', () => {
   loginScreen.style.display = 'flex';
 });
 
-// stay logged in for this browser tab session
-if(sessionStorage.getItem('toscaAuth') === 'true'){
-  grantAccess();
-}
+fetch('/api/auth-status')
+  .then(response => response.ok ? response.json() : null)
+  .then(result => { if(result && result.authenticated) grantAccess(); })
+  .catch(() => {});
 </script>
 </body>
 </html>

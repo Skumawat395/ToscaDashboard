@@ -27,7 +27,7 @@ JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/QM_RISE_QA_SeparateExe
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
@@ -48,7 +48,7 @@ JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/MM_RISE_QA_SeparateExe
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
@@ -69,7 +69,7 @@ JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
@@ -90,7 +90,7 @@ JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PP_RISE_QA"
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
@@ -112,7 +112,7 @@ JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/SD_RiseIndia_QA/SD_RIS
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
@@ -133,7 +133,7 @@ JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_MM"
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
@@ -154,13 +154,13 @@ JumpToNode "/Execution/ExecutionLists/ROW/03_Approved/ROW_SD"
 get Name
 
 // Fetch TestCase Results
-For "=>SUBPARTS:ExecutionEntry" CallOnEach "C:\\Tosca\\Batch\\GetIndividualResult.tcs"
+For "=>SUBPARTS:ExecutionEntry" CallOnEach "ToscaScripts\\GetIndividualResult.tcs"
 
 
 // ==============================================
 // GENERATE REPORTS
 // ==============================================
 
-// Call "C:\\Tosca\\Batch\\GenerateTestCaseReport.tcs"
+// Call "ToscaScripts\\GenerateTestCaseReport.tcs"
 
 Exit
