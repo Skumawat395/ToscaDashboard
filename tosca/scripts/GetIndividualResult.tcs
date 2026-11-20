@@ -1,0 +1,17 @@
+//=====================================================
+// Fetch ALL Execution Logs of this Execution Entry
+//=====================================================
+//
+// Run Execute.bat after Tosca executions. Every log of every execution entry
+// is read (newest first). import_results.py then stores only the logs that
+// are not in the database yet and splits them into one report per execution
+// (a gap of more than RUN_GAP_MINUTES, default 60, starts a new report). So:
+//   - logs already imported earlier          -> skipped
+//   - one execution since the last import    -> one new report
+//   - several executions since the last one  -> one new report each
+//
+//=====================================================
+
+For "->SORT(=>SUPERPART:ExecutionList->ExecutionLogs[Name==\"ActualLog\"]->TestCaseLogs,\"-StartTime\")" CallOnEach "scripts\\GetTestCaseLog.tcs"
+
+Exit

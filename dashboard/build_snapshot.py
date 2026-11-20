@@ -1,25 +1,31 @@
+import sys
+
+# Console output can be redirected to a log; never crash on characters like '→'.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+
 import json
 from datetime import datetime
 from pathlib import Path
-from result_store import get_execution_results
+from result_store import DATABASE_FILE, DATA_DIR, get_execution_results
 
 # ============================================================
 # TOSCA EXECUTION DASHBOARD - LOCAL DATABASE DATA GENERATOR
 # ============================================================
 # Reads:
-#   Results/tosca_results.sqlite3
+#   data/tosca_results.sqlite3
 #
-# Uses the EXISTING DashBoard_Light.html as the template.
+# Uses dashboard/web/dashboard.html as the template.
 # It does NOT create a new dashboard design.
 #
 # Flow:
 #   tosca_results.sqlite3
 #          |
 #          v
-#   ToscaDB.py
+#   build_snapshot.py
 #          |
 #          v
-#   ToscaExecutionDashboard.html
+#   data/ToscaExecutionDashboard.html
 #
 # Important:
 # - Every stored testcase result is loaded. NO deduplication.
@@ -33,13 +39,10 @@ from result_store import get_execution_results
 
 BASE_DIR = Path(__file__).resolve().parent
 
-OUTPUT_FILE = BASE_DIR / "ToscaExecutionDashboard.html"
+OUTPUT_FILE = DATA_DIR / "ToscaExecutionDashboard.html"
 
-# Keep DashBoard_Light.html in Results.
-# Downloads is supported as a fallback.
 TEMPLATE_CANDIDATES = [
-    BASE_DIR / "DashBoard_Light.html",
-    Path.home() / "Downloads" / "DashBoard_Light.html",
+    BASE_DIR / "web" / "dashboard.html",
 ]
 
 REQUIRED_COLUMNS = [
@@ -108,10 +111,10 @@ def find_template():
 
     checked = "\n".join(f"  - {p}" for p in TEMPLATE_CANDIDATES)
     raise FileNotFoundError(
-        "\nDashBoard_Light.html was not found.\n"
+        "\ndashboard.html was not found.\n"
         "Checked:\n" + checked +
         "\n\nRecommended location:\n"
-        f"  {BASE_DIR / 'DashBoard_Light.html'}"
+        f"  {BASE_DIR / 'web' / 'dashboard.html'}"
     )
 
 
@@ -119,8 +122,8 @@ def read_local_database():
     stored_rows = get_execution_results()
     if not stored_rows:
         raise FileNotFoundError(
-            f"\nNo local Tosca results were found in {BASE_DIR / 'tosca_results.sqlite3'}.\n"
-            "Run Tosca_DashBoard.py to parse and store a Tosca execution first."
+            f"\nNo local Tosca results were found in {DATABASE_FILE}.\n"
+            "Run import_results.py to parse and store a Tosca execution first."
         )
 
     records = []
@@ -140,6 +143,7 @@ def read_local_database():
             "CreatedBy": text(row.get("CreatedBy")),
             "CreatedAt": fmt_datetime(row.get("CreatedAt")),
             "ReportPath": "",
+            "run_id": text(row.get("run_id")),
         })
 
     print(f"Valid local database records loaded: {len(records)}")
@@ -186,7 +190,7 @@ def replace_required(html, old, new, name):
     if old not in html:
         raise RuntimeError(
             f"\nDashboard template section not found: {name}\n"
-            "Use the supplied DashBoard_Light.html template."
+            "Use the supplied web/dashboard.html template."
         )
 
     return html.replace(old, new, 1)
@@ -248,56 +252,13 @@ def generate_dashboard(records):
 
     html = html[:start] + real_block + html[end:]
 
-    # --------------------------------------------------------
-    # 3. Build month cards ONLY from real Excel months.
-    # --------------------------------------------------------
-    old_month_logic = """const presentKeys = [...new Set(allRows.map(r => assignMonth(r)))];
-  const orderedKeys = MONTHS.map(m => m.key).filter(k => presentKeys.includes(k)).reverse()
-    .concat(presentKeys.filter(k => !MONTHS.some(m => m.key === k))); // latest known month first, unrecognized ones after"""
-
-    new_month_logic = """const presentKeys = [...new Set(allRows.map(r => r.Month).filter(Boolean))];
-    // Use every month present in SQLite, newest first.
-  const orderedKeys = presentKeys.sort((a, b) => b.localeCompare(a));"""
-
-    html = replace_required(
-        html,
-        old_month_logic,
-        new_month_logic,
-        "real month ordering"
-    )
-
-    # --------------------------------------------------------
-    # 4. Replace monthLabel so any real YYYY-MM is displayed
-    #    as "September 2026", "August 2026", etc.
-    # --------------------------------------------------------
-    old_label = """function monthLabel(key){
-  const m = MONTHS.find(x => x.key === key);
-  return m ? m.label : key;
-}"""
-
-    new_label = """function monthLabel(key){
-  if(!key) return '';
-  const parts = String(key).split('-');
-  if(parts.length === 2){
-    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
-    if(!isNaN(d.getTime())){
-      return d.toLocaleString('en-US', {month:'long', year:'numeric'});
-    }
-  }
-  return key;
-}"""
-
-    html = replace_required(
-        html,
-        old_label,
-        new_label,
-        "month label"
-    )
+    # 3/4. Month ordering and month labels are built into the template
+    #      (report dropdown, newest first) - nothing to patch.
 
     # --------------------------------------------------------
     # 5. Disable live API fetch.
     #    The generated dashboard uses the local database snapshot
-    #    by ToscaDB.py and must not replace it with another
+    #    by build_snapshot.py and must not replace it with another
     #    data source.
     # --------------------------------------------------------
     live_start = html.find("async function fetchLive(){")
@@ -331,32 +292,27 @@ def generate_dashboard(records):
 
         html = html[:report_start] + blank_report + html[report_end:]
 
-    old_report_cell = """html += `<tr><td>${r.Environment}</td><td>${r.Module}</td><td>${r.TestCaseName}</td><td><span class="badge ${cls}">${rr}</span></td><td><a href="#" class="report-link" data-key="${key}">View Report</a></td></tr>`;"""
-
-    new_report_cell = """html += `<tr><td>${r.Environment}</td><td>${r.Module}</td><td>${r.TestCaseName}</td><td><span class="badge ${cls}">${rr}</span></td><td></td></tr>`;"""
-
     html = replace_required(
         html,
-        old_report_cell,
-        new_report_cell,
-        "report column"
+        "const SHOW_REPORT_LINKS = true;",
+        "const SHOW_REPORT_LINKS = false;",
+        "report link switch"
     )
 
-    # All-documents screen: blank document column too.
-    old_doc_cell = """html += `<tr><td>${r.Environment}</td><td>${r.Module}</td><td>${r.TestCaseName}</td><td><a href="#" class="report-link" data-key="${key}">View Document</a></td></tr>`;"""
-
-    new_doc_cell = """html += `<tr><td>${r.Environment}</td><td>${r.Module}</td><td>${r.TestCaseName}</td><td></td></tr>`;"""
-
-    if old_doc_cell in html:
-        html = html.replace(old_doc_cell, new_doc_cell, 1)
+    # Static snapshot: there is no live server to sync with.
+    html = html.replace(
+        '<span id="syncText">Connecting…</span>',
+        '<span id="syncText">Static snapshot</span>',
+        1
+    )
 
     # --------------------------------------------------------
     # 7. Validation.
     # --------------------------------------------------------
     required_markers = [
         'id="loginScreen"',
-        'id="homeScreen"',
-        'id="monthScreen"',
+        'id="monthSelect"',
+        'id="runSelect"',
         'id="dashboardContent"',
         "const PYTHON_DATA = [",
     ]
@@ -383,7 +339,7 @@ def generate_dashboard(records):
     print("Dummy data: DISABLED")
     print("Live API overwrite: DISABLED")
     print("Report PDF: BLANK")
-    print("Login/Home/Month/Dashboard pages: PRESERVED")
+    print("Login/Dashboard (latest report + report dropdown): PRESERVED")
 
 
 def main():

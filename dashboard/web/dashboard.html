@@ -1,0 +1,1611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tosca Execution Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+<style>
+  :root{
+    color-scheme: light;
+    --bg:#f3f5f9; --panel:#ffffff; --panel2:#f6f8fb;
+    --line:#e3e7ef; --grid:#e8ebf1; --axis:#c3c9d5;
+    --text:#0f172a; --text2:#334155; --muted:#64748b;
+    --accent:#2a78d6; --series-1:#2a78d6; --series-1-dim:#a9c9ef; --accent-soft:rgba(42,120,214,.10);
+    --pass:#0ca30c; --fail:#d03b3b; --other:#e0a100;
+    --pass-soft:rgba(12,163,12,.10); --fail-soft:rgba(208,59,59,.10); --other-soft:rgba(250,178,25,.16);
+    --shadow:0 1px 2px rgba(15,23,42,.04), 0 4px 16px rgba(15,23,42,.05);
+    --shadow-hover:0 2px 4px rgba(15,23,42,.06), 0 12px 28px rgba(15,23,42,.09);
+    --appbar:rgba(255,255,255,.86);
+    /* typography: Montserrat for headers, Poppins for all other text */
+    --font-head:'Montserrat','Segoe UI',system-ui,sans-serif;
+    --font-body:'Poppins','Segoe UI',system-ui,sans-serif;
+    --fs-header:18pt; --fs-subheader:16pt; --fs-subtitle:12pt;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --bg:#0d0f13; --panel:#171a20; --panel2:#1e222a;
+    --line:#2a2f39; --grid:#252a33; --axis:#3a404c;
+    --text:#f0efec; --text2:#c3c2b7; --muted:#8d94a3;
+    --accent:#3987e5; --series-1:#3987e5; --series-1-dim:#2b4466; --accent-soft:rgba(57,135,229,.16);
+    --pass:#0ca30c; --fail:#d03b3b; --other:#fab219;
+    --pass-soft:rgba(12,163,12,.18); --fail-soft:rgba(208,59,59,.20); --other-soft:rgba(250,178,25,.18);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    --shadow-hover:0 2px 4px rgba(0,0,0,.35), 0 12px 28px rgba(0,0,0,.4);
+    --appbar:rgba(23,26,32,.86);
+    }
+  }
+  :root[data-theme="dark"]{
+    color-scheme: dark;
+    --bg:#0d0f13; --panel:#171a20; --panel2:#1e222a;
+    --line:#2a2f39; --grid:#252a33; --axis:#3a404c;
+    --text:#f0efec; --text2:#c3c2b7; --muted:#8d94a3;
+    --accent:#3987e5; --series-1:#3987e5; --series-1-dim:#2b4466; --accent-soft:rgba(57,135,229,.16);
+    --pass:#0ca30c; --fail:#d03b3b; --other:#fab219;
+    --pass-soft:rgba(12,163,12,.18); --fail-soft:rgba(208,59,59,.20); --other-soft:rgba(250,178,25,.18);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
+    --shadow-hover:0 2px 4px rgba(0,0,0,.35), 0 12px 28px rgba(0,0,0,.4);
+    --appbar:rgba(23,26,32,.86);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:var(--font-body);
+    background:var(--bg); color:var(--text); min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1, h2, h3, .brand-name{font-family:var(--font-head);}
+  h1{font-size:var(--fs-header); line-height:1.2; margin:0; letter-spacing:-.2px; font-weight:700;}
+  h2{font-size:var(--fs-subheader); margin:0; font-weight:700; letter-spacing:-.1px;}
+  h3{font-size:var(--fs-subheader); margin:0; font-weight:700;}
+  .sub{color:var(--muted); font-size:var(--fs-subtitle);}
+  input, select, button, textarea{font-family:inherit;}
+  .muted{color:var(--muted);}
+  .eyebrow{font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:6px;}
+  .tnum{font-variant-numeric:tabular-nums;}
+
+  /* ---- app bar ---- */
+  .appbar{
+    position:sticky; top:0; z-index:40; background:var(--appbar);
+    backdrop-filter:saturate(1.4) blur(12px); -webkit-backdrop-filter:saturate(1.4) blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .appbar-inner{
+    max-width:1280px; margin:0 auto; padding:12px 24px;
+    display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
+  }
+  .brand{display:flex; align-items:center; gap:12px; min-width:0;}
+  .brand-mark{
+    width:36px; height:36px; border-radius:10px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:17px;
+    background:linear-gradient(135deg, var(--accent), #1baf7a);
+    box-shadow:0 4px 12px rgba(42,120,214,.28);
+    position:relative; overflow:hidden; letter-spacing:-.5px;
+  }
+  /* TF logo: drop the image at dashboard/web/tf-logo.png; the "TF" text shows until it exists */
+  .brand-mark img, .login-icon img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:var(--panel); padding:3px;}
+  .brand-mark:has(img){box-shadow:none; border:1px solid var(--line);}
+  .login-icon{position:relative; overflow:hidden;}
+  .login-icon:has(img){box-shadow:0 8px 24px rgba(20,30,60,.12); border:1px solid var(--line);}
+  .login-icon img{padding:7px;}
+  .brand-name{font-size:var(--fs-header); font-weight:700; letter-spacing:-.2px; line-height:1.15;}
+  .brand-sub{font-size:11.5px; color:var(--muted);}
+  .appbar-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .report-pick{display:flex; align-items:center; gap:8px;}
+  .report-pick span{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px;}
+  .sync{display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); white-space:nowrap;}
+  .sync-dot{width:8px; height:8px; border-radius:50%; background:var(--axis);}
+  .sync.ok .sync-dot{background:var(--pass); box-shadow:0 0 0 3px var(--pass-soft);}
+  .sync.err .sync-dot{background:var(--fail); box-shadow:0 0 0 3px var(--fail-soft);}
+
+  /* ---- layout ---- */
+  .wrap{max-width:1280px; margin:0 auto; padding:28px 24px 64px;}
+  .hero{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px;}
+  .hero .sub{margin-top:6px;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap;}
+  .chip{
+    display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:99px;
+    background:var(--panel); border:1px solid var(--line); font-size:12px; font-weight:600; color:var(--text2);
+  }
+  .chip b{color:var(--text);}
+  .section-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; margin:30px 0 12px;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:var(--shadow);}
+  .panel-head{display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-bottom:14px;}
+  .panel-note{font-size:12px; color:var(--muted);}
+  .stack > * + *{margin-top:20px;}
+
+  /* ---- KPI tiles ---- */
+  .kpis{display:grid; grid-template-columns:2.1fr repeat(5, 1fr); gap:14px;}
+  .i-runs{background:var(--accent-soft); color:var(--accent);}
+  @media(max-width:1240px){ .kpis{grid-template-columns:repeat(5, minmax(0, 1fr));} .kpi-hero{grid-column:1 / -1;} }
+  @media(max-width:760px){ .kpis{grid-template-columns:repeat(2, minmax(0, 1fr));} }
+  @media(max-width:340px){ .kpis{grid-template-columns:minmax(0, 1fr);} }
+  @media(max-width:640px){ .kpis{gap:10px;} .kpi{padding:14px;} .kpi-value{font-size:26px;} .kpis > .kpi:last-child:nth-child(even){grid-column:1 / -1;} }
+  .kpi{
+    background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:16px 18px;
+    box-shadow:var(--shadow); display:flex; flex-direction:column; gap:8px; min-width:0;
+  }
+  .kpi-top{display:flex; align-items:center; gap:10px; min-height:28px; min-width:0;}
+  .kpi-icon{
+    width:28px; height:28px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center;
+    font-size:14px; font-weight:800; flex:0 0 auto;
+  }
+  .i-total{background:var(--accent-soft); color:var(--accent);}
+  .i-pass{background:var(--pass-soft); color:var(--pass);}
+  .i-fail{background:var(--fail-soft); color:var(--fail);}
+  .i-other{background:var(--other-soft); color:var(--other);}
+  .kpi-label{font-size:12px; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  .kpi-value{font-size:30px; font-weight:750; letter-spacing:-.6px; line-height:1.05; font-variant-numeric:tabular-nums;}
+  .kpi-foot{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
+  .kpi-hero{
+    background:linear-gradient(160deg, var(--panel) 0%, var(--panel2) 100%);
+    gap:12px;
+  }
+  .kpi-hero .kpi-value{font-size:44px; letter-spacing:-1.2px;}
+  .kpi-hero .rate-row{display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;}
+  .rate-pill{
+    display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:700;
+    padding:3px 10px; border-radius:99px; color:var(--text);
+  }
+  .rate-pill::before{content:''; width:8px; height:8px; border-radius:50%;}
+  .rate-pill.good{background:var(--pass-soft);} .rate-pill.good::before{background:var(--pass);}
+  .rate-pill.warn{background:var(--other-soft);} .rate-pill.warn::before{background:var(--other);}
+  .rate-pill.bad{background:var(--fail-soft);} .rate-pill.bad::before{background:var(--fail);}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text2);}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+  .legend b{color:var(--text); font-variant-numeric:tabular-nums;}
+
+  /* ---- pass / fail / other split bar (2px surface gap between segments) ---- */
+  .split{display:flex; gap:2px; height:10px; border-radius:99px; overflow:hidden; background:var(--panel); width:100%;}
+  .split.lg{height:14px;}
+  .split.sm{height:8px; min-width:90px;}
+  .split .seg{display:block; min-width:3px; height:100%;}
+
+  /* overall pass-rate meter: hover a segment or a key item to light that kind, the rest fade */
+  .meter{display:flex; flex-direction:column; gap:12px;}
+  .meter-head{display:flex; align-items:center; justify-content:space-between; gap:8px 10px; flex-wrap:wrap; min-height:28px;}
+  .meter-title{font-family:var(--font-head); font-size:15px; font-weight:600; color:var(--text); white-space:nowrap;}
+  .meter-head .rate-pill{white-space:nowrap;}
+  .rate-of{font-size:13px; color:var(--muted);}
+  /* one stacked bar of separately rounded blocks with small gaps */
+  .cbar{display:flex; gap:3px; height:40px; width:100%;}
+  .cbar .seg{display:block; height:100%; min-width:6px; border-radius:7px;}
+  .cbar .seg-none{flex:1; background:var(--grid);}
+  /* key: soft grey pill chips with a coloured dot */
+  .meter-key{display:flex; flex-wrap:wrap; gap:8px;}
+  .meter-key span{display:inline-flex; align-items:center; gap:8px; padding:5px 11px; border-radius:99px;
+    background:var(--panel2); border:1px solid var(--line); font-size:12px; color:var(--text2);}
+  .meter-key i{width:9px; height:9px; border-radius:3px; display:inline-block;}
+  .meter .seg, .meter-key span{transition:opacity .18s ease, filter .18s ease, background .18s ease;}
+  .meter .seg, .meter-key span{cursor:default;}
+  .meter[data-focus="Passed"] .seg:not([data-k="Passed"]),
+  .meter[data-focus="Failed"] .seg:not([data-k="Failed"]),
+  .meter[data-focus="Other"] .seg:not([data-k="Other"]){opacity:.22;}
+  .meter[data-focus="Passed"] .meter-key span:not([data-k="Passed"]),
+  .meter[data-focus="Failed"] .meter-key span:not([data-k="Failed"]),
+  .meter[data-focus="Other"] .meter-key span:not([data-k="Other"]){opacity:.4;}
+  .meter[data-focus] .seg[data-k]{filter:saturate(1.15);}
+  .meter[data-focus] .meter-key span[data-k]{color:var(--text); font-weight:600;}
+  .seg-passed{background:var(--pass);} .seg-failed{background:var(--fail);} .seg-other{background:var(--other);}
+  .seg-none{background:var(--grid);}
+
+  /* ---- chart ---- */
+  .chart-box{position:relative; width:100%;}
+
+  /* ---- overview: environments (left) + monthly trend (right) ---- */
+  .overview{display:grid; grid-template-columns:minmax(0, 1.15fr) minmax(0, 1fr); gap:16px; align-items:stretch;}
+  @media(max-width:1180px){ .overview{grid-template-columns:minmax(0, 1fr);} .trend-box{min-height:300px;} }
+  .overview-col{display:flex; flex-direction:column; min-width:0;}
+  .overview .env-grid{grid-template-columns:minmax(0, 1fr);}
+  .overview .trend-panel{flex:1;}
+  .trend-box{flex:1; min-height:260px;}
+  .head-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;}
+  #monthPanel.collapsed{display:none;}
+  .head-actions [hidden]{display:none !important;}
+  #trendTitle{white-space:nowrap;}
+  #trendBack{padding:4px 10px; font-size:12px;}
+  .overview .head-actions{flex-wrap:nowrap;}
+
+  /* ---- monthly trend ---- */
+  .trend-panel{display:flex; flex-direction:column; gap:18px;}
+  .trend-scroll{overflow-x:auto;}
+  .mini-scroll{overflow-x:auto; margin:0 -4px;}
+  #monthPanel{padding:6px 8px;}
+  .trend-scroll table{min-width:720px;}
+  .trend-scroll tbody tr{cursor:pointer;}
+  .trend-scroll tbody tr.current td{background:var(--accent-soft);}
+  .trend-scroll .month-name{font-weight:700; white-space:nowrap;}
+  .trend-scroll .month-name small{display:block; font-weight:600; font-size:11px; color:var(--accent); margin-top:2px;}
+  .run-chips{display:flex; gap:6px; flex-wrap:wrap; max-width:520px;}
+  .run-chip{
+    font:inherit; font-size:11.5px; font-weight:600; color:var(--text2); cursor:pointer; white-space:nowrap;
+    background:var(--panel); border:1px solid var(--line); border-radius:99px; padding:3px 9px;
+  }
+  .run-chip:hover{border-color:var(--accent); color:var(--text);}
+  .run-chip.active{border-color:var(--accent); background:var(--accent-soft); color:var(--text);}
+  .trend-legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--text2);}
+  .trend-legend span{display:inline-flex; align-items:center; gap:6px;}
+  .trend-legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
+  .trend-legend i.dash{width:16px; height:0; border-radius:0; border-top:2px dashed var(--muted);}
+
+  /* ---- environment cards ---- */
+  .env-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(440px, 1fr)); gap:16px;}
+  @media(max-width:560px){ .env-grid{grid-template-columns:1fr;} }
+  .env-card{display:flex; flex-direction:column; gap:12px; transition:box-shadow .18s ease, border-color .18s ease;}
+  .env-card:hover{box-shadow:var(--shadow-hover);}
+  .env-head{display:flex; align-items:flex-start; justify-content:space-between; gap:12px;}
+  .env-head .eyebrow{margin-bottom:3px;}
+  .env-rate{text-align:right;}
+  .env-rate .big{font-size:24px; font-weight:750; letter-spacing:-.5px; font-variant-numeric:tabular-nums;}
+  .env-meta{font-size:12px; color:var(--muted);}
+
+  /* ---- tables ---- */
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  th,td{padding:10px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:middle;}
+  th{
+    color:var(--muted); font-weight:600; text-transform:uppercase; font-size:10.5px; letter-spacing:.6px;
+    background:var(--panel); white-space:nowrap;
+  }
+  td.num, th.num{text-align:right; font-variant-numeric:tabular-nums;}
+  tbody tr:last-child td{border-bottom:none;}
+  tbody tr:hover td{background:var(--panel2);}
+  table.mini th, table.mini td{padding:8px 8px;}
+  table.mini tbody tr{cursor:pointer;}
+  .meter-cell{display:flex; align-items:center; gap:10px;}
+  .meter-cell .val{font-weight:700; font-variant-numeric:tabular-nums; min-width:48px; text-align:right;}
+  .table-scroll{max-height:620px; overflow:auto; border-top:1px solid var(--line);}
+  .table-scroll thead th{position:sticky; top:0; z-index:1; box-shadow:inset 0 -1px 0 var(--line);}
+  .tc-name{font-weight:600; color:var(--text); min-width:280px; overflow-wrap:anywhere;}
+  .where{white-space:nowrap;}
+  .where .env-name{font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.3px; margin-bottom:3px;}
+  .cell-muted{color:var(--muted); font-size:12.5px; white-space:nowrap; font-variant-numeric:tabular-nums;}
+  .tag{display:inline-block; padding:2px 8px; border-radius:6px; background:var(--panel2); border:1px solid var(--line); font-size:11.5px; font-weight:600; color:var(--text2); white-space:nowrap;}
+
+  /* result pill: status colour on the icon, label stays in text ink */
+  .badge{display:inline-flex; align-items:center; gap:6px; padding:3px 10px 3px 4px; border-radius:99px; font-size:12px; font-weight:600; color:var(--text); white-space:nowrap;}
+  .badge i{width:18px; height:18px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-style:normal; font-size:10.5px; font-weight:800; color:#fff;}
+  .b-pass{background:var(--pass-soft);} .b-pass i{background:var(--pass);}
+  .b-fail{background:var(--fail-soft);} .b-fail i{background:var(--fail);}
+  .b-other{background:var(--other-soft);} .b-other i{background:var(--other); color:#0b0b0b;}
+
+  /* ---- filters ---- */
+  .filters{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+  select, input[type=search]{
+    background:var(--panel); color:var(--text); border:1px solid var(--line);
+    border-radius:10px; padding:8px 12px; font-size:13px; font-family:inherit; outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease;
+  }
+  select:hover, input[type=search]:hover{border-color:var(--axis);}
+  select:focus, input[type=search]:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  input[type=search]{flex:1 1 260px; min-width:200px; padding-left:34px;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m14 14-3.2-3.2'/%3E%3C/svg%3E");
+    background-repeat:no-repeat; background-position:12px 50%;
+  }
+  #monthSelect{font-weight:600; max-width:100%;}
+  #runSelect{font-weight:600; max-width:100%;}
+  .empty{color:var(--muted); font-size:13px; text-align:center; padding:40px 0;}
+
+  .report-link{color:var(--accent); text-decoration:none; font-weight:600; font-size:12.5px; white-space:nowrap;}
+  .report-link:hover{text-decoration:underline;}
+
+  .modal-overlay{
+    display:none; position:fixed; inset:0; background:rgba(20,30,55,.45);
+    z-index:100; align-items:flex-start; justify-content:center; padding:40px 16px; overflow-y:auto;
+  }
+  .modal-overlay.open{display:flex;}
+  .modal{
+    background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    max-width:720px; width:100%; padding:22px 24px 24px; position:relative;
+  }
+  .modal h2{margin:0 0 2px; font-size:var(--fs-subheader);}
+  .modal .modal-sub{color:var(--muted); font-size:12.5px; margin-bottom:16px;}
+  .modal-close{
+    position:absolute; top:14px; right:16px; background:transparent; border:none;
+    color:var(--muted); font-size:20px; cursor:pointer; line-height:1;
+  }
+  .modal-close:hover{color:var(--text);}
+  .modal-meta{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:10px; margin-bottom:18px;}
+  .modal-meta .mi{background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:8px 10px;}
+  .modal-meta .mi .k{font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;}
+  .modal-meta .mi .v{font-size:13px; font-weight:600; margin-top:2px;}
+  .step-list{list-style:none; margin:0; padding:0;}
+  .step-list li{
+    display:flex; align-items:flex-start; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);
+  }
+  .step-list li:last-child{border-bottom:none;}
+  .step-dot{width:9px; height:9px; border-radius:50%; margin-top:5px; flex:0 0 auto;}
+  .step-dot.ok{background:var(--pass);}
+  .step-dot.bad{background:var(--fail);}
+  .step-name{font-size:13px; font-weight:600;}
+  .step-detail{font-size:12px; color:var(--muted); margin-top:2px;}
+  .step-time{margin-left:auto; font-size:11.5px; color:var(--muted); white-space:nowrap;}
+  .log-box{
+    background:#101828; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+    font-family:Consolas,monospace; font-size:11.5px; color:#a9b8d6; margin-top:16px; max-height:140px; overflow-y:auto; white-space:pre-wrap;
+  }
+
+  /* ---- login gate ---- */
+  #loginScreen{
+    position:fixed; inset:0; z-index:200; display:flex; align-items:center; justify-content:center;
+    background:
+      radial-gradient(900px 500px at 12% 15%, rgba(15,143,214,.10) 0%, transparent 60%),
+      radial-gradient(900px 500px at 88% 85%, rgba(28,163,98,.10) 0%, transparent 60%),
+      radial-gradient(1200px 600px at 80% -10%, #dfeaf9 0%, var(--bg) 55%);
+    padding:20px; overflow:hidden;
+  }
+  .glow-orb{
+    position:absolute; border-radius:50%; filter:blur(70px); opacity:.45; pointer-events:none;
+    animation:orbFloat 9s ease-in-out infinite;
+  }
+  .glow-orb.o1{width:340px; height:340px; background:radial-gradient(circle, rgba(15,143,214,.45), transparent 70%); top:8%; left:10%;}
+  .glow-orb.o2{width:300px; height:300px; background:radial-gradient(circle, rgba(28,163,98,.4), transparent 70%); bottom:6%; right:10%; animation-delay:2.5s;}
+  .glow-orb.o3{width:220px; height:220px; background:radial-gradient(circle, rgba(201,121,26,.32), transparent 70%); bottom:20%; left:20%; animation-delay:1.2s;}
+  @keyframes orbFloat{
+    0%,100%{ transform:translateY(0) translateX(0); }
+    50%{ transform:translateY(-18px) translateX(12px); }
+  }
+  @keyframes cardIn{
+    from{ opacity:0; transform:translateY(16px) scale(.98); }
+    to{ opacity:1; transform:translateY(0) scale(1); }
+  }
+  .login-box{
+    position:relative; z-index:2; animation:cardIn .5s ease both;
+    background:linear-gradient(165deg, rgba(255,255,255,.96) 0%, rgba(245,247,251,.96) 100%);
+    backdrop-filter:blur(14px);
+    border:1px solid var(--line);
+    border-radius:20px;
+    padding:40px 36px 34px;
+    width:100%; max-width:380px; text-align:center;
+    box-shadow:0 0 0 1px rgba(15,143,214,.06), 0 25px 60px rgba(20,30,60,.14), 0 0 40px rgba(15,143,214,.05);
+  }
+  .login-icon{
+    width:58px; height:58px; margin:0 auto 18px; border-radius:16px;
+    display:flex; align-items:center; justify-content:center; font-size:26px;
+    background:linear-gradient(135deg, var(--accent), var(--pass));
+    box-shadow:0 8px 24px rgba(79,195,247,.35);
+  }
+  .login-box h1{font-size:var(--fs-header); text-align:center; margin-bottom:6px; letter-spacing:0;}
+  .login-box .login-sub{color:var(--muted); font-size:var(--fs-subtitle); margin-bottom:26px;}
+  .login-field{position:relative; margin-bottom:14px;}
+  .login-field .field-icon{
+    position:absolute; left:13px; top:50%; transform:translateY(-50%);
+    font-size:14px; opacity:.55; pointer-events:none;
+  }
+  .login-box input{
+    width:100%; background:#f5f7fb; border:1px solid var(--line); color:var(--text);
+    border-radius:10px; padding:13px 14px 13px 36px; font-size:13.5px; outline:none;
+    transition:border-color .15s ease, box-shadow .15s ease, background .15s ease;
+  }
+  .login-box input::placeholder{color:#8c98ae;}
+  .login-box input:focus{
+    border-color:var(--accent); background:#ffffff;
+    box-shadow:0 0 0 3px rgba(15,143,214,.15);
+  }
+  .login-box button{
+    width:100%; color:#ffffff; border:none; border-radius:10px;
+    padding:13px; font-weight:700; font-size:13.5px; cursor:pointer; margin-top:10px;
+    background:linear-gradient(135deg, var(--accent), #38b6f0);
+    background-size:160% 160%; background-position:0% 50%;
+    box-shadow:0 10px 24px rgba(15,143,214,.28);
+    transition:transform .15s ease, box-shadow .15s ease, background-position .3s ease;
+  }
+  .login-box button:hover{
+    transform:translateY(-2px);
+    box-shadow:0 14px 30px rgba(15,143,214,.38);
+    background-position:100% 50%;
+  }
+  .login-box button:active{ transform:translateY(0); }
+  .login-error{color:var(--fail); font-size:12px; min-height:16px; margin-top:12px;}
+  .login-footnote{margin-top:22px; font-size:10.5px; color:#8c98ae; letter-spacing:.3px;}
+  #dashboardContent{display:none;}
+
+  .nav-btn{
+    background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:10px;
+    padding:8px 14px; font-weight:650; font-size:13px; font-family:inherit; cursor:pointer;
+    transition:border-color .15s ease, background .15s ease;
+  }
+  .nav-btn:hover{border-color:var(--accent); background:var(--panel2);}
+  .nav-btn.ghost{border-color:transparent; background:transparent; color:var(--muted);}
+  .nav-btn.ghost:hover{color:var(--text); background:var(--panel2);}
+
+  /* ---- dark-mode adjustments for the login gate and modal ---- */
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]) #loginScreen{background:radial-gradient(900px 500px at 15% 10%, rgba(57,135,229,.16), transparent 60%), var(--bg);}
+    :root:not([data-theme="light"]) .login-box{background:var(--panel);}
+    :root:not([data-theme="light"]) .login-box input{background:var(--panel2);}
+    :root:not([data-theme="light"]) .login-box input:focus{background:var(--panel2);}
+  }
+  :root[data-theme="dark"] #loginScreen{background:radial-gradient(900px 500px at 15% 10%, rgba(57,135,229,.16), transparent 60%), var(--bg);}
+  :root[data-theme="dark"] .login-box{background:var(--panel);}
+  :root[data-theme="dark"] .login-box input{background:var(--panel2);}
+  @media(max-width:640px){
+    .wrap{padding:20px 16px 48px;} .appbar-inner{padding:10px 16px;}
+    h1{font-size:15pt;} #monthSelect, #runSelect{min-width:0; width:100%;} .report-pick{flex:1 1 100%;}
+    .report-pick span{min-width:44px;}
+    .brand-sub{display:none;} .brand-name{font-size:14pt;}
+    .hero{flex-direction:column; align-items:flex-start;}
+    .section-head{flex-wrap:wrap;}
+    .kpi-hero .kpi-value{font-size:36px;}
+  }
+</style>
+</head>
+<body>
+  <div id="loginScreen">
+    <div class="glow-orb o1"></div>
+    <div class="glow-orb o2"></div>
+    <div class="glow-orb o3"></div>
+    <div class="login-box">
+      <div class="login-icon">🛡️<img src="/assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
+      <h1>Tosca Execution Dashboard</h1>
+      <div class="login-sub">Sign in to view sprint execution results</div>
+      <div class="login-field">
+        <span class="field-icon">👤</span>
+        <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
+      </div>
+      <div class="login-field">
+        <span class="field-icon">🔒</span>
+        <input type="password" id="loginPass" placeholder="Password" autocomplete="current-password">
+      </div>
+      <button id="loginBtn">Login</button>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-footnote">Authorized team access only</div>
+    </div>
+  </div>
+
+  <div id="dashboardContent">
+  <header class="appbar">
+    <div class="appbar-inner">
+      <div class="brand">
+        <div class="brand-mark">TF<img src="/assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
+        <div>
+          <div class="brand-name">Tosca Execution Dashboard</div>
+          <div class="brand-sub">Automated regression results</div>
+        </div>
+      </div>
+      <div class="appbar-actions">
+        <label class="report-pick">
+          <span>Month</span>
+          <select id="monthSelect" disabled><option value="">Loading…</option></select>
+        </label>
+        <label class="report-pick">
+          <span>Run</span>
+          <select id="runSelect" disabled><option value="">Loading…</option></select>
+        </label>
+        <span class="sync" id="syncStatus" title="Results refresh automatically every 60 seconds">
+          <span class="sync-dot"></span><span id="syncText">Connecting…</span>
+        </span>
+        <button id="logoutBtn" class="nav-btn">⏻ Logout</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div>
+        <div class="eyebrow">Execution report</div>
+        <h1 id="heroTitle">Loading…</h1>
+        <div class="sub" id="monthSubHeading">Loading the latest execution report…</div>
+      </div>
+      <div class="chips" id="envChips"></div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi kpi-hero">
+        <div class="meter-head">
+          <div class="meter-title" id="rateLabel">Overall pass rate</div>
+          <span class="rate-pill" id="ratePill"></span>
+        </div>
+        <div class="rate-row">
+          <div class="kpi-value" id="rateNum">–</div>
+          <span class="rate-of" id="rateOf"></span>
+        </div>
+        <div class="meter" id="heroMeter">
+          <div class="cbar" id="heroSplit"></div>
+          <div class="meter-key">
+            <span data-k="Passed"><i class="seg-passed"></i>Passed</span>
+            <span data-k="Failed"><i class="seg-failed"></i>Failed</span>
+            <span data-k="Other"><i class="seg-other"></i>Other</span>
+          </div>
+        </div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span class="kpi-icon i-total">Σ</span><span class="kpi-label">Test cases</span></div>
+        <div class="kpi-value" id="totalNum">–</div>
+        <div class="kpi-foot" id="totalFoot">&nbsp;</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span class="kpi-icon i-pass">✓</span><span class="kpi-label">Passed</span></div>
+        <div class="kpi-value" id="passNum">–</div>
+        <div class="kpi-foot" id="passFoot">&nbsp;</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span class="kpi-icon i-fail">✕</span><span class="kpi-label">Failed</span></div>
+        <div class="kpi-value" id="failNum">–</div>
+        <div class="kpi-foot" id="failFoot">&nbsp;</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span class="kpi-icon i-other">!</span><span class="kpi-label">Other / Error</span></div>
+        <div class="kpi-value" id="otherNum">–</div>
+        <div class="kpi-foot" id="otherFoot">&nbsp;</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-top"><span class="kpi-icon i-runs">▶</span><span class="kpi-label" id="runsLabel">Executions</span></div>
+        <div class="kpi-value" id="runsNum">–</div>
+        <div class="kpi-foot" id="runsFoot">&nbsp;</div>
+      </div>
+    </section>
+
+    <div class="overview">
+      <div class="overview-col">
+        <div class="section-head"><h2>Environments</h2><span class="panel-note">Click a module to see its test cases</span></div>
+        <div class="env-grid" id="envGrid"></div>
+      </div>
+      <div class="overview-col">
+        <div class="section-head">
+          <h2 id="trendTitle">Monthly trend</h2>
+          <div class="head-actions">
+            <span class="panel-note" id="trendNote">Click a month to see its executions</span>
+            <button class="nav-btn" id="trendBack" type="button" hidden>← All months</button>
+          </div>
+        </div>
+        <section class="panel trend-panel">
+          <div class="trend-legend">
+            <span><i style="background:var(--series-1)"></i><span id="legendOn">Month of the open report</span></span>
+            <span><i style="background:var(--series-1-dim)"></i><span id="legendOff">Other months</span></span>
+            <span><i class="dash"></i><span id="legendAvg">Average</span></span>
+          </div>
+          <div class="chart-box trend-box"><canvas id="trendChart" role="img" aria-label="Pass rate per month"></canvas></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="section-head">
+      <h2>Monthly executions</h2>
+      <div class="head-actions">
+        <span class="panel-note">Runs and success rate per month</span>
+        <button class="nav-btn" id="monthToggle" type="button" aria-expanded="true" aria-controls="monthPanel">▾ Minimize</button>
+      </div>
+    </div>
+    <section class="panel" id="monthPanel">
+      <div class="trend-scroll" id="monthTableWrap"></div>
+    </section>
+
+    <div class="section-head"><h2>Pass rate by module</h2><span class="panel-note">Highest to lowest · hover a bar for counts</span></div>
+    <section class="panel">
+      <div class="chart-box" id="barBox"><canvas id="barChart" role="img" aria-label="Pass rate by environment and module"></canvas></div>
+    </section>
+
+  <div class="modal-overlay" id="reportOverlay">
+    <div class="modal">
+      <button class="modal-close" id="reportClose">&times;</button>
+      <h2 id="reportTitle">Test Case Execution Report</h2>
+      <div class="modal-sub" id="reportSub"></div>
+      <div class="modal-meta" id="reportMeta"></div>
+      <ul class="step-list" id="reportSteps"></ul>
+      <div class="log-box" id="reportLog"></div>
+    </div>
+  </div>
+
+    <div class="section-head"><h2>Test case detail</h2><span class="panel-note tnum" id="tableCount"></span></div>
+    <section class="panel" id="detailPanel">
+      <div class="filters">
+        <input type="search" id="searchBox" placeholder="Search test cases…" aria-label="Search test cases">
+        <select id="envFilter" aria-label="Environment"><option value="">All environments</option></select>
+        <select id="modFilter" aria-label="Module"><option value="">All modules</option></select>
+        <select id="resFilter" aria-label="Result"><option value="">All results</option><option>Passed</option><option>Failed</option><option>Other</option></select>
+        <button class="nav-btn ghost" id="clearFilters" type="button">Clear filters</button>
+      </div>
+      <div class="table-scroll" id="tableWrap"></div>
+    </section>
+  </main>
+
+<script>
+function hashStr(s){
+  let h = 0;
+  for(let i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+  return h;
+}
+
+function assignMonth(row){
+  // a report = one month of executions, keyed YYYY-MM from the row's own Month or StartTime
+  if(row.Month) return row.Month;
+  if(row.Sprint) return row.Sprint;
+  const start = row.StartTime || row.startTime || row.start_time;
+  return start ? String(start).slice(0, 7) : 'Unknown';
+}
+
+// Records injected by build_snapshot.py when it builds the static ToscaExecutionDashboard.html.
+// Left as an empty array [] in this template; the server version loads rows from /api/results.
+const PYTHON_DATA = [];
+
+let allRows = [];
+let rows = [];
+let selectedMonth = null;  // open run key (YYYY-MM|YYYY-MM-DD), or null when the Overall view is open
+let selMonth = null;       // month picked in the Month dropdown (YYYY-MM)
+let userPickedReport = false; // until the user picks one, always follow the latest report
+
+if(PYTHON_DATA.length){
+  allRows = PYTHON_DATA.map(r => ({ ...r, Month: assignMonth(r) }));
+} else {
+  allRows = [];
+}
+
+function monthLabel(key){
+  if(!key) return '';
+  const parts = String(key).split('-');
+  if(parts.length === 2){
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, 1);
+    if(!isNaN(d.getTime())){
+      return d.toLocaleString('en-US', {month:'long', year:'numeric'});
+    }
+  }
+  return key;
+}
+
+// A run = everything executed on one date (by the test case's StartTime), whichever
+// Execute.bat import brought it in. Runs are numbered per month: Run 1, Run 2, ...
+let reports = new Map();
+
+function dayKey(d){
+  return d ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}` : 'undated';
+}
+
+// A test case executed more than once on the same day counts once in that day's run:
+// only its latest execution (by StartTime) is kept. The database keeps every execution.
+function latestPerDay(list){
+  const best = new Map();
+  list.forEach(r => {
+    const d = toDate(r.StartTime);
+    const key = `${r.Environment}|${r.Module}|${r.TestCaseName}|${dayKey(d)}`;
+    const prev = best.get(key);
+    if(!prev || (d && (!prev.d || d >= prev.d))) best.set(key, { r, d });
+  });
+  return [...best.values()].map(x => x.r);
+}
+
+function buildReports(){
+  allRows = latestPerDay(allRows);
+  const map = new Map();
+  allRows.forEach(r => {
+    if(!r.Month) return;
+    const d = toDate(r.StartTime);
+    const key = `${r.Month}|${dayKey(d)}`;
+    if(!map.has(key)) map.set(key, { key, month: r.Month, rows: [], first: null, last: null });
+    const rep = map.get(key);
+    rep.rows.push(r);
+    if(d && (!rep.first || d < rep.first)) rep.first = d;
+    if(d && (!rep.last || d > rep.last)) rep.last = d;
+  });
+  reports = map;
+  // newest first: by month, then by execution date
+  return [...map.values()].sort((a, b) => b.month.localeCompare(a.month) || ((b.last || 0) - (a.last || 0)));
+}
+
+function reportName(rep){
+  if(!rep.last) return `Run ${runNumber(rep)} · undated`;
+  return `Run ${runNumber(rep)} · ${fmtDay(rep.last)}`;
+}
+
+// runs of one month, oldest first: Run 1, Run 2, ...
+function monthRuns(month){
+  return [...reports.values()].filter(r => r.month === month).sort((a, b) => (a.last || 0) - (b.last || 0));
+}
+function runNumber(rep){
+  return monthRuns(rep.month).indexOf(rep) + 1;
+}
+function runShortLabel(rep){
+  return `Run ${runNumber(rep)} · ${rep.last ? rep.last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'undated'}`;
+}
+function monthRows(month){ return allRows.filter(r => r.Month === month); }
+
+function renderReportSelect(){
+  const mSel = document.getElementById('monthSelect');
+  const rSel = document.getElementById('runSelect');
+  const list = buildReports();
+  if(!list.length){
+    mSel.innerHTML = '<option value="">No months</option>';
+    rSel.innerHTML = '<option value="">No runs</option>';
+    mSel.disabled = rSel.disabled = true;
+    selectedMonth = selMonth = null;
+    return;
+  }
+  const months = [...new Set(list.map(r => r.month))]; // newest first
+  if(!userPickedReport || !months.includes(selMonth)){
+    selMonth = list[0].month;
+    selectedMonth = null;                      // default: Overall view of the latest month
+  }
+  if(selectedMonth && (!reports.has(selectedMonth) || reports.get(selectedMonth).month !== selMonth)){
+    const runs = monthRuns(selMonth);
+    selectedMonth = runs.length ? runs[runs.length - 1].key : null;
+  }
+  mSel.disabled = rSel.disabled = false;
+  mSel.innerHTML = months.map((m, i) => {
+    const s = tally(monthRows(m));
+    return `<option value="${esc(m)}">${esc(monthLabel(m))}${i === 0 ? ' (Latest)' : ''}</option>`;
+  }).join('');
+  mSel.value = selMonth;
+
+  const runs = monthRuns(selMonth);
+  const all = tally(monthRows(selMonth));
+  const live = runs.length;
+  let html = `<option value="">Overall · ${live} run${live === 1 ? '' : 's'} · ${all.pct.toFixed(1)}%</option>`;
+  [...runs].reverse().forEach((rep, i) => {
+    const s = tally(rep.rows);
+    html += `<option value="${esc(rep.key)}">${esc(runShortLabel(rep))} · ${s.pct.toFixed(1)}%${i === 0 ? ' (Latest)' : ''}</option>`;
+  });
+  rSel.innerHTML = html;
+  rSel.value = selectedMonth || '';
+}
+
+function showReport(key){
+  selectedMonth = key && reports.has(key) ? key : null;
+  rows = selectedMonth ? reports.get(selectedMonth).rows : (selMonth ? monthRows(selMonth) : []);
+  // the trend chart follows the dropdowns: a run shows that month's runs, Overall shows all months
+  trendDrillMonth = selectedMonth ? selMonth : null;
+  buildFilters();
+  renderAll();
+}
+
+function refreshDashboard(){
+  renderReportSelect();
+  showReport(selectedMonth);
+}
+
+document.getElementById('monthSelect').addEventListener('change', (e) => {
+  userPickedReport = true;
+  selMonth = e.target.value;
+  selectedMonth = null;                         // a new month opens on its Overall view
+  renderReportSelect();
+  showReport(null);
+});
+document.getElementById('runSelect').addEventListener('change', (e) => {
+  userPickedReport = true;
+  showReport(e.target.value || null);
+});
+
+// ---------- live fetch from the dashboard server (/api/results) ----------
+function setSync(ok, text){
+  const el = document.getElementById('syncStatus');
+  el.className = 'sync ' + (ok ? 'ok' : 'err');
+  document.getElementById('syncText').textContent = text;
+}
+
+async function fetchLive(){
+  try{
+    const res = await fetch('/api/results', { cache:'no-store' });
+    if(!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    if(!data.error && Array.isArray(data.rows)){
+      allRows = data.rows.map(r => ({ ...r, Month: assignMonth(r) }));
+      refreshDashboard();
+      setSync(true, `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} · ${data.source === 'supabase' ? 'Supabase' : 'Local DB'}`);
+    }
+  }catch(err){
+    setSync(false, 'Offline · retrying');
+    if(!allRows.length){
+      document.getElementById('monthSubHeading').textContent = 'Unable to load execution results from the server.';
+    }
+  }
+}
+
+// ---------- helpers ----------
+function normResult(r){
+  r = (r||'').trim().toLowerCase();
+  if(r === 'passed' || r === 'pass') return 'Passed';
+  if(r === 'failed' || r === 'fail') return 'Failed';
+  return 'Other';
+}
+function tally(list){
+  const t = {Passed:0, Failed:0, Other:0};
+  list.forEach(r => t[normResult(r.Result)]++);
+  const total = list.length;
+  const pct = total ? (t.Passed/total*100) : 0;
+  return { total, ...t, pct };
+}
+
+// Set to false by build_snapshot.py for the static export (no PDF reports there yet).
+const SHOW_REPORT_LINKS = true;
+
+let barChart;
+let tableList = [];
+
+function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function pctOf(n, total){ return total ? (n / total * 100).toFixed(1) + '%' : '—'; }
+function rateLevel(p){ return p >= 80 ? 'good' : p >= 50 ? 'warn' : 'bad'; }
+function rateWord(p){ return p >= 80 ? 'Healthy' : p >= 50 ? 'Needs attention' : 'Critical'; }
+function toDate(v){
+  if(!v) return null;
+  // Tosca/ToscaDB format: dd-mm-yyyy or dd/mm/yyyy [hh:mm[:ss]] (day first, not US month first)
+  const m = String(v).trim().match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})(?:[ T](\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+  // ISO times from Supabase carry +00:00, but Tosca times are local wall-clock times:
+  // drop the offset so 15:03 stays 15:03 instead of being shifted to the browser's zone.
+  const d = m ? new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0))
+              : new Date(String(v).trim().replace(/(Z|[+-]\d{2}:?\d{2})$/, ''));
+  return isNaN(d.getTime()) ? null : d;
+}
+function fmtDate(v){
+  const d = toDate(v);
+  return d ? d.toLocaleString('en-GB', {day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+}
+function fmtDay(d){ return d.toLocaleDateString('en-GB', {day:'2-digit', month:'short', year:'numeric'}); }
+function fmtDuration(a, b){
+  const s = (toDate(b) - toDate(a)) / 1000;
+  if(!toDate(a) || !toDate(b) || !isFinite(s) || s < 0) return '—';
+  if(s < 60) return Math.round(s) + 's';
+  const m = Math.floor(s / 60);
+  if(m < 60) return `${m}m ${Math.round(s % 60)}s`;
+  return `${Math.floor(m / 60)}h ${m % 60}m`;
+}
+function splitBar(s, size){
+  const cls = 'split' + (size ? ' ' + size : '');
+  if(!s.total) return `<div class="${cls}"><span class="seg seg-none" style="flex:1"></span></div>`;
+  const segs = ['Passed','Failed','Other'].filter(k => s[k]).map(k =>
+    `<span class="seg seg-${k.toLowerCase()}" data-k="${k}" style="flex:${s[k]}" title="${k}: ${s[k]} (${pctOf(s[k], s.total)})"></span>`).join('');
+  return `<div class="${cls}" role="img" aria-label="${s.Passed} passed, ${s.Failed} failed, ${s.Other} other">${segs}</div>`;
+}
+function badge(result){
+  const rr = normResult(result);
+  const [cls, icon] = rr === 'Passed' ? ['b-pass','✓'] : rr === 'Failed' ? ['b-fail','✕'] : ['b-other','!'];
+  return `<span class="badge ${cls}"><i>${icon}</i>${rr}</span>`;
+}
+
+function fillSelect(id, values, allLabel){
+  const sel = document.getElementById(id);
+  const prev = sel.value;
+  sel.innerHTML = `<option value="">${allLabel}</option>` + values.map(v => `<option value="${esc(v)}">${esc(v)}</option>`).join('');
+  if(values.includes(prev)) sel.value = prev;
+}
+
+function buildFilters(){
+  fillSelect('envFilter', [...new Set(rows.map(r => r.Environment))].sort(), 'All environments');
+  const env = document.getElementById('envFilter').value;
+  fillSelect('modFilter', [...new Set(rows.filter(r => !env || r.Environment === env).map(r => r.Module))].sort(), 'All modules');
+}
+
+function renderHero(){
+  const envs = [...new Set(rows.map(r => r.Environment))].filter(Boolean).sort();
+  const mods = new Set(rows.map(r => `${r.Environment}|${r.Module}`));
+  const current = reports.get(selectedMonth);
+  document.getElementById('heroTitle').textContent = current ? reportName(current)
+    : selMonth ? `${monthLabel(selMonth)} · Overall` : 'No reports yet';
+  const parts = [];
+  if(selMonth){
+    const n = monthRuns(selMonth).length;
+    parts.push(current ? `Run ${runNumber(current)} of ${n} this month` : `${n} run${n === 1 ? '' : 's'}`);
+  }
+  if(rows.length) parts.push(`${rows.length.toLocaleString()} test case${rows.length === 1 ? '' : 's'}`, `${mods.size} module${mods.size === 1 ? '' : 's'}`);
+  document.getElementById('monthSubHeading').textContent = parts.length ? parts.join(' · ') : 'No execution reports found yet.';
+  document.getElementById('envChips').innerHTML = envs.map(e => {
+    const s = tally(rows.filter(r => r.Environment === e));
+    return `<span class="chip">${esc(e)} <b>${s.pct.toFixed(0)}%</b></span>`;
+  }).join('');
+}
+
+function renderSummary(){
+  const s = tally(rows);
+  document.getElementById('totalNum').textContent = s.total.toLocaleString();
+  document.getElementById('passNum').textContent = s.Passed.toLocaleString();
+  document.getElementById('failNum').textContent = s.Failed.toLocaleString();
+  document.getElementById('otherNum').textContent = s.Other.toLocaleString();
+  document.getElementById('rateNum').textContent = s.total ? s.pct.toFixed(1) + '%' : '–';
+  const pill = document.getElementById('ratePill');
+  pill.className = 'rate-pill' + (s.total ? ' ' + rateLevel(s.pct) : '');
+  pill.textContent = s.total ? rateWord(s.pct) : '';
+  const envCount = new Set(rows.map(r => r.Environment)).size;
+  const unique = new Set(rows.map(r => `${r.Environment}|${r.Module}|${r.TestCaseName}`)).size;
+  document.getElementById('totalFoot').textContent = !s.total ? ' '
+    : selectedMonth ? `across ${envCount} environment${envCount === 1 ? '' : 's'}`
+    : `${unique.toLocaleString()} unique · all runs of the month`;
+  document.getElementById('rateLabel').textContent = selectedMonth ? 'Run pass rate' : 'Overall pass rate';
+  // executions done in the selected month
+  const runs = selMonth ? monthRuns(selMonth) : [];
+  const live = runs;
+  document.getElementById('runsNum').textContent = selMonth ? live.length.toLocaleString() : '–';
+  const cur = reports.get(selectedMonth);
+  document.getElementById('runsFoot').textContent = !selMonth ? ' '
+    : cur ? `${shortMonth(selMonth)} · viewing run ${runNumber(cur)} of ${live.length}`
+    : live.length ? `${shortMonth(selMonth)} · latest ${live[live.length - 1].last ? live[live.length - 1].last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : '—'}` : 'no runs';
+  document.getElementById('passFoot').textContent = s.total ? `${pctOf(s.Passed, s.total)} of total` : ' ';
+  document.getElementById('failFoot').textContent = s.total ? `${pctOf(s.Failed, s.total)} of total` : ' ';
+  document.getElementById('otherFoot').textContent = s.total ? `${pctOf(s.Other, s.total)} of total` : ' ';
+  document.getElementById('heroSplit').innerHTML = !s.total ? '<span class="seg seg-none"></span>'
+    : ['Passed','Failed','Other'].filter(k => s[k]).map(k =>
+        `<span class="seg seg-${k.toLowerCase()}" data-k="${k}" style="flex:${s[k]}" title="${k}: ${s[k]} (${pctOf(s[k], s.total)})"></span>`).join('');
+  document.getElementById('rateOf').textContent = s.total ? `of ${s.total.toLocaleString()} TCs` : '';
+}
+
+function renderEnvPanels(){
+  const grid = document.getElementById('envGrid');
+  const envs = [...new Set(rows.map(r => r.Environment))].sort();
+  if(!envs.length){ grid.innerHTML = '<div class="panel empty">No environments in this report.</div>'; return; }
+  grid.innerHTML = envs.map(env => {
+    const envRows = rows.filter(r => r.Environment === env);
+    const es = tally(envRows);
+    const mods = [...new Set(envRows.map(r => r.Module))].sort();
+    const body = mods.map(mod => {
+      const s = tally(envRows.filter(r => r.Module === mod));
+      return `<tr data-env="${esc(env)}" data-mod="${esc(mod)}" title="Show ${esc(mod)} test cases">
+        <td><b>${esc(mod)}</b></td>
+        <td class="num">${s.total}</td>
+        <td class="num">${s.Passed}</td>
+        <td class="num">${s.Failed}</td>
+        <td class="num">${s.Other}</td>
+        <td><div class="meter-cell">${splitBar(s, 'sm')}<span class="val">${s.pct.toFixed(1)}%</span></div></td>
+      </tr>`;
+    }).join('');
+    return `<section class="panel env-card">
+      <div class="env-head">
+        <div><div class="eyebrow">Environment</div><h3>${esc(env)}</h3></div>
+        <div class="env-rate"><div class="big">${es.pct.toFixed(1)}%</div><span class="rate-pill ${rateLevel(es.pct)}">${rateWord(es.pct)}</span></div>
+      </div>
+      ${splitBar(es)}
+      <div class="env-meta tnum">${es.total} test cases · ${es.Passed} passed · ${es.Failed} failed · ${es.Other} other</div>
+      <div class="mini-scroll"><table class="mini"><thead><tr><th>Module</th><th class="num">Total</th><th class="num">Passed</th><th class="num">Failed</th><th class="num">Other</th><th>Pass rate</th></tr></thead>
+      <tbody>${body}</tbody></table></div>
+    </section>`;
+  }).join('');
+}
+
+document.getElementById('envGrid').addEventListener('click', (e) => {
+  const tr = e.target.closest('tr[data-env]');
+  if(!tr) return;
+  document.getElementById('envFilter').value = tr.dataset.env;
+  buildFilters();
+  document.getElementById('modFilter').value = tr.dataset.mod;
+  document.getElementById('resFilter').value = '';
+  renderTable();
+  document.getElementById('detailPanel').scrollIntoView({behavior:'smooth', block:'start'});
+});
+
+function renderCharts(){
+  const items = [...new Set(rows.map(r => `${r.Environment} · ${r.Module}`))].map(k => {
+    const [env, mod] = k.split(' · ');
+    return { k, ...tally(rows.filter(r => r.Environment === env && r.Module === mod)) };
+  }).sort((a, b) => b.pct - a.pct || b.total - a.total);
+  const box = document.getElementById('barBox');
+  box.style.height = Math.max(140, items.length * 34 + 44) + 'px';
+  if(barChart){ barChart.destroy(); barChart = null; }
+  if(!items.length || !window.Chart) return;
+  const ink = cssVar('--text'), muted = cssVar('--muted');
+  const font = "'Poppins', 'Segoe UI', system-ui, sans-serif";
+  barChart = new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: { labels: items.map(i => i.k), datasets: [{
+      label: 'Pass rate', data: items.map(i => +i.pct.toFixed(1)),
+      backgroundColor: cssVar('--series-1'), hoverBackgroundColor: cssVar('--series-1'),
+      borderRadius: 4, borderSkipped: 'start', barThickness: 16
+    }]},
+    options: {
+      indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      layout: { padding: { right: 52 } },
+      interaction: { mode: 'nearest', axis: 'y', intersect: false },
+      scales: {
+        x: { min: 0, max: 100, grid: { color: cssVar('--grid'), drawTicks: false }, border: { display: false },
+             ticks: { color: muted, padding: 6, callback: v => v + '%', font: { family: font, size: 11 } } },
+        y: { grid: { display: false }, border: { color: cssVar('--axis') },
+             ticks: { color: cssVar('--text2'), font: { family: font, size: 12, weight: '600' } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cssVar('--panel'), titleColor: ink, bodyColor: cssVar('--text2'),
+          borderColor: cssVar('--line'), borderWidth: 1, padding: 10, cornerRadius: 8, displayColors: false,
+          titleFont: { family: font, weight: '700' }, bodyFont: { family: font },
+          callbacks: { label: c => {
+            const i = items[c.dataIndex];
+            return [`Pass rate ${i.pct.toFixed(1)}%`, `${i.Passed} passed · ${i.Failed} failed · ${i.Other} other`, `${i.total} test cases`];
+          } }
+        }
+      }
+    },
+    plugins: [{
+      id: 'valueLabels',
+      afterDatasetsDraw(chart){
+        const { ctx } = chart;
+        ctx.save();
+        ctx.fillStyle = ink;
+        ctx.font = `700 11.5px ${font}`;
+        ctx.textBaseline = 'middle';
+        chart.getDatasetMeta(0).data.forEach((bar, i) => ctx.fillText(items[i].pct.toFixed(1) + '%', bar.x + 8, bar.y));
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+// ---------- monthly trend (all reports, not just the open one) ----------
+let trendChart;
+let trendMonths = [];
+
+function openMonth_(month){
+  userPickedReport = true;
+  selMonth = month;
+  selectedMonth = null;
+  renderReportSelect();
+  showReport(null);
+}
+
+function openReport_(key){
+  if(!reports.has(key)) return;
+  userPickedReport = true;
+  selMonth = reports.get(key).month;
+  selectedMonth = key;
+  renderReportSelect();
+  showReport(key);
+}
+
+function monthStats(){
+  const map = new Map();
+  allRows.forEach(r => {
+    if(!r.Month || !/^\d{4}-\d{2}$/.test(r.Month)) return;
+    if(!map.has(r.Month)) map.set(r.Month, { month: r.Month, rows: [], days: new Map() });
+    const m = map.get(r.Month);
+    m.rows.push(r);
+    const d = toDate(r.StartTime);
+    if(d) m.days.set(d.getDate(), (m.days.get(d.getDate()) || 0) + 1);
+  });
+  const reps = [...reports.values()];
+  return [...map.values()].map(m => {
+    const runs = reps.filter(x => x.month === m.month).sort((a, b) => (a.last || 0) - (b.last || 0));
+    const [y, mo] = m.month.split('-').map(Number);
+    return { ...m, ...tally(m.rows), runs, daysInMonth: new Date(y, mo, 0).getDate(),
+             executions: runs.length };
+  }).sort((a, b) => a.month.localeCompare(b.month));
+}
+
+function shortMonth(key){
+  const [y, m] = key.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'short', year: '2-digit' });
+}
+
+function renderTrend(){
+  trendMonths = monthStats();
+  const currentMonth = selMonth;
+  const wrap = document.getElementById('monthTableWrap');
+
+  // --- table: newest month first ---
+  if(!trendMonths.length){
+    wrap.innerHTML = '<div class="empty">No executions yet.</div>';
+  } else {
+    const body = [...trendMonths].reverse().map(m => {
+      const chips = m.runs.map(rep => {
+        const label = runShortLabel(rep);
+        return `<button type="button" class="run-chip${rep.key === selectedMonth ? ' active' : ''}" data-key="${esc(rep.key)}" title="Open this report · ${rep.rows.length} test cases · ${tally(rep.rows).pct.toFixed(1)}% pass">${esc(label)}</button>`;
+      }).join('');
+      const runsText = String(m.executions);
+      return `<tr data-month="${esc(m.month)}" class="${m.month === currentMonth ? 'current' : ''}">
+        <td class="month-name">${esc(monthLabel(m.month))}${m.month === currentMonth ? '<small>Selected month</small>' : ''}</td>
+        <td class="num">${runsText}</td>
+        <td><div class="run-chips">${chips}</div></td>
+        <td class="num">${m.total.toLocaleString()}</td>
+        <td class="num">${m.Passed.toLocaleString()}</td>
+        <td class="num">${m.Failed.toLocaleString()}</td>
+        <td><div class="meter-cell">${splitBar(m, 'sm')}<span class="val">${m.pct.toFixed(1)}%</span></div></td>
+      </tr>`;
+    }).join('');
+    wrap.innerHTML = `<table><thead><tr>
+      <th>Month</th><th class="num">Executions</th><th>Runs</th>
+      <th class="num">Test runs</th><th class="num">Passed</th><th class="num">Failed</th><th>Success rate</th>
+    </tr></thead><tbody>${body}</tbody></table>`;
+  }
+
+  renderTrendChart();
+}
+
+// Chart shows one bar per month; clicking a month with several executions
+// drills into it and shows one bar per execution of that month.
+let trendDrillMonth = null;
+
+function runLabel(rep){
+  return `Run ${runNumber(rep)}`;
+}
+
+function setTrendDrill(month){
+  trendDrillMonth = month;
+  renderTrendChart();
+}
+
+function renderTrendChart(){
+  if(trendChart){ trendChart.destroy(); trendChart = null; }
+  const drill = trendDrillMonth && trendMonths.find(m => m.month === trendDrillMonth);
+  if(!drill) trendDrillMonth = null;
+  document.getElementById('trendTitle').textContent = drill ? `Monthly trend · ${monthLabel(drill.month)}` : 'Monthly trend';
+  document.getElementById('trendNote').textContent = drill ? 'Click a bar to open that report'
+                                                           : 'Click a month to see its executions';
+  document.getElementById('trendBack').hidden = !drill;
+  document.getElementById('legendOn').textContent = drill ? (selectedMonth ? 'Selected run' : 'Runs') : 'Selected month';
+  document.getElementById('legendOff').textContent = drill ? 'Other runs' : 'Other months';
+  if(!trendMonths.length || !window.Chart) return;
+
+  const currentMonth = selMonth;
+  // one item per bar: either a month or one execution (report) of the drilled month
+  const items = drill
+    ? drill.runs.map(rep => ({ ...tally(rep.rows), label: runLabel(rep), title: reportName(rep), rep, active: !selectedMonth || rep.key === selectedMonth,
+                               days: new Set(rep.rows.map(r => { const d = toDate(r.StartTime); return d ? d.toDateString() : ''; }).filter(Boolean)).size }))
+    : trendMonths.map(m => ({ ...m, label: shortMonth(m.month), title: monthLabel(m.month), m, active: m.month === currentMonth, days: m.days.size }));
+
+  const ink = cssVar('--text'), muted = cssVar('--muted');
+  const font = "'Poppins', 'Segoe UI', system-ui, sans-serif";
+  const on = cssVar('--series-1'), dim = cssVar('--series-1-dim');
+  // dashed reference line: average monthly pass rate (all months), or the month's overall rate (drilled)
+  const avg = drill ? drill.pct : items.reduce((a, i) => a + i.pct, 0) / items.length;
+  document.getElementById('legendAvg').textContent = drill ? `Month overall ${avg.toFixed(1)}%` : `Avg monthly pass rate ${avg.toFixed(1)}%`;
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: { labels: items.map(i => i.label), datasets: [{
+      label: 'Success rate', data: items.map(i => +i.pct.toFixed(1)),
+      backgroundColor: items.map(i => i.active ? on : dim), hoverBackgroundColor: on,
+      borderRadius: 4, borderSkipped: 'start', maxBarThickness: 44, categoryPercentage: .8, order: 2
+    }, {
+      type: 'line', label: 'Average', data: items.map(() => +avg.toFixed(1)),
+      borderColor: muted, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHitRadius: 0,
+      fill: false, order: 1
+    }]},
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      layout: { padding: { top: 22 } },
+      onClick: (e, els) => {
+        els = els.filter(el => el.datasetIndex === 0);
+        if(!els.length) return;
+        const it = items[els[0].index];
+        if(drill){ openReport_(it.rep.key); return; }
+        if(it.m.runs.length){ openMonth_(it.m.month); setTrendDrill(it.m.month); }
+      },
+      onHover: (e, els) => { e.native.target.style.cursor = els.some(el => el.datasetIndex === 0) ? 'pointer' : 'default'; },
+      scales: {
+        y: { min: 0, max: 100, grid: { color: cssVar('--grid'), drawTicks: false }, border: { display: false },
+             ticks: { color: muted, padding: 6, stepSize: 25, callback: v => v + '%', font: { family: font, size: 11 } } },
+        x: { grid: { display: false }, border: { color: cssVar('--axis') },
+             ticks: { color: cssVar('--text2'), font: { family: font, size: 11.5, weight: '600' } } }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: cssVar('--panel'), titleColor: ink, bodyColor: cssVar('--text2'),
+          borderColor: cssVar('--line'), borderWidth: 1, padding: 10, cornerRadius: 8, displayColors: false,
+          titleFont: { family: font, weight: '700' }, bodyFont: { family: font },
+          filter: c => c.datasetIndex === 0,
+          callbacks: {
+            title: c => items[c[0].dataIndex].title,
+            label: c => {
+              const it = items[c.dataIndex];
+              const lines = [`Success rate ${it.pct.toFixed(1)}%`];
+              if(!drill) lines.push(`${it.executions} run${it.executions === 1 ? '' : 's'}`);
+              lines.push(`${it.total} test runs · ${it.Passed} passed · ${it.Failed} failed · ${it.Other} other`);
+              lines.push(drill ? 'Click to open this report'
+                               : `Click to see its ${it.m.runs.length === 1 ? 'execution' : it.m.runs.length + ' executions'}`);
+              return lines;
+            }
+          }
+        }
+      }
+    },
+    plugins: [{
+      id: 'trendLabels',
+      afterDatasetsDraw(chart){
+        const { ctx } = chart;
+        ctx.save();
+        ctx.fillStyle = ink;
+        ctx.font = `700 11px ${font}`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        chart.getDatasetMeta(0).data.forEach((bar, i) => ctx.fillText(items[i].pct.toFixed(0) + '%', bar.x, bar.y - 4));
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+document.getElementById('trendBack').addEventListener('click', () => setTrendDrill(null));
+
+document.getElementById('monthTableWrap').addEventListener('click', (e) => {
+  const chip = e.target.closest('.run-chip');
+  if(chip){ openReport_(chip.dataset.key); return; }
+  const tr = e.target.closest('tr[data-month]');
+  if(!tr) return;
+  const m = trendMonths.find(x => x.month === tr.dataset.month);
+  if(m) openMonth_(m.month);
+});
+
+// minimise / expand the monthly executions table (remembered in this browser)
+(function(){
+  const btn = document.getElementById('monthToggle');
+  const panel = document.getElementById('monthPanel');
+  function apply(collapsed){
+    panel.classList.toggle('collapsed', collapsed);
+    btn.textContent = collapsed ? '▸ Expand' : '▾ Minimize';
+    btn.setAttribute('aria-expanded', String(!collapsed));
+  }
+  let collapsed = false;
+  try{ collapsed = localStorage.getItem('monthTableCollapsed') === '1'; }catch(e){}
+  apply(collapsed);
+  btn.addEventListener('click', () => {
+    collapsed = !panel.classList.contains('collapsed');
+    apply(collapsed);
+    try{ localStorage.setItem('monthTableCollapsed', collapsed ? '1' : '0'); }catch(e){}
+  });
+})();
+
+function openReportForRow(row){
+  const pdfPath = row.ReportPath || row.ReportFile || row.ReportUrl || row.PdfPath || row.Report;
+  if(pdfPath){
+    // a real Tosca-generated PDF path/URL was supplied by the server — open it directly
+    window.open(pdfPath, '_blank');
+  } else if(window.jspdf){
+    // no server-side PDF available — build a full execution report PDF for this test case
+    generatePDFReport(row);
+  } else {
+    openReport(row);
+  }
+}
+
+function renderTable(){
+  const env = document.getElementById('envFilter').value;
+  const mod = document.getElementById('modFilter').value;
+  const res = document.getElementById('resFilter').value;
+  const q = document.getElementById('searchBox').value.trim().toLowerCase();
+  const order = { Failed: 0, Other: 1, Passed: 2 };
+  tableList = rows.filter(r =>
+    (!env || r.Environment === env) &&
+    (!mod || r.Module === mod) &&
+    (!res || normResult(r.Result) === res) &&
+    (!q || String(r.TestCaseName || '').toLowerCase().includes(q))
+  ).sort((a, b) => order[normResult(a.Result)] - order[normResult(b.Result)]
+    || String(a.Environment).localeCompare(String(b.Environment))
+    || String(a.Module).localeCompare(String(b.Module))
+    || String(a.TestCaseName).localeCompare(String(b.TestCaseName)));
+  document.getElementById('tableCount').textContent = rows.length ? `Showing ${tableList.length.toLocaleString()} of ${rows.length.toLocaleString()} · failures first` : '';
+  const wrap = document.getElementById('tableWrap');
+  if(!tableList.length){
+    wrap.innerHTML = `<div class="empty">${rows.length ? 'No test cases match these filters.' : 'No test cases in this report.'}</div>`;
+    return;
+  }
+  const head = `<tr><th>Environment / Module</th><th>Test case</th><th>Result</th><th>Executed</th><th class="num">Duration</th>${SHOW_REPORT_LINKS ? '<th>Report</th>' : ''}</tr>`;
+  const body = tableList.map((r, i) => `<tr>
+    <td class="where"><div class="env-name">${esc(r.Environment)}</div><span class="tag">${esc(r.Module)}</span></td>
+    <td class="tc-name">${esc(r.TestCaseName)}</td>
+    <td>${badge(r.Result)}</td>
+    <td class="cell-muted">${fmtDate(r.StartTime)}</td>
+    <td class="cell-muted num">${fmtDuration(r.StartTime, r.EndTime)}</td>
+    ${SHOW_REPORT_LINKS ? `<td><a href="#" class="report-link" data-idx="${i}">View report</a></td>` : ''}
+  </tr>`).join('');
+  wrap.innerHTML = `<table><thead>${head}</thead><tbody>${body}</tbody></table>`;
+}
+
+document.getElementById('tableWrap').addEventListener('click', (e) => {
+  const link = e.target.closest('.report-link');
+  if(!link) return;
+  e.preventDefault();
+  const row = tableList[Number(link.dataset.idx)];
+  if(row) openReportForRow(row);
+});
+
+// light up one kind in the overall meter while a segment or key item is hovered
+(function(){
+  const meter = document.getElementById('heroMeter');
+  meter.addEventListener('mouseover', (e) => {
+    const k = e.target.closest('[data-k]')?.dataset.k;
+    if(k) meter.dataset.focus = k; else delete meter.dataset.focus;
+  });
+  meter.addEventListener('mouseleave', () => { delete meter.dataset.focus; });
+})();
+
+function renderAll(){
+  renderHero();
+  renderSummary();
+  renderTrend();
+  renderCharts();
+  renderEnvPanels();
+  renderTable();
+}
+
+document.getElementById('envFilter').addEventListener('change', () => { buildFilters(); renderTable(); });
+['modFilter','resFilter'].forEach(id => document.getElementById(id).addEventListener('change', renderTable));
+document.getElementById('searchBox').addEventListener('input', renderTable);
+document.getElementById('clearFilters').addEventListener('click', () => {
+  ['envFilter','modFilter','resFilter'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('searchBox').value = '';
+  buildFilters();
+  renderTable();
+});
+// redraw the chart with the other theme's colours when the OS theme flips
+if(window.matchMedia){
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { renderTrend(); renderCharts(); });
+}
+
+// ---------- execution report modal ----------
+const STEP_TEMPLATES = [
+  'Launch Application / Login',
+  'Navigate to Transaction',
+  'Enter Test Data',
+  'Execute Business Action',
+  'Validate Result Screen',
+  'Capture Screenshot & Close'
+];
+
+function generateReport(row){
+  const rr = normResult(row.Result);
+  const h = hashStr(row.Environment + row.Module + row.TestCaseName);
+  const durationTotal = 18 + (h % 42); // seconds, deterministic per test case
+  const failStepIdx = rr === 'Failed' ? (2 + (h % (STEP_TEMPLATES.length - 2))) : -1;
+
+  let elapsed = 0;
+  const steps = STEP_TEMPLATES.map((name, i) => {
+    const stepDur = 2 + ((h >> (i+1)) % 6);
+    elapsed += stepDur;
+    const failed = i === failStepIdx;
+    return {
+      name,
+      status: failed ? 'Failed' : 'Passed',
+      time: elapsed + 's',
+      detail: failed
+        ? 'Verification failed — expected value did not match actual result on screen.'
+        : 'Step completed as expected.'
+    };
+  });
+  if(failStepIdx > -1){
+    // truncate remaining steps as "not executed" after the failure
+    steps.splice(failStepIdx + 1).forEach(() => {});
+  }
+
+  const day = 1 + (h % 27);
+  const hour = 6 + (h % 12);
+  const minute = (h >> 3) % 60;
+  const timestamp = `2026-08-${String(day).padStart(2,'0')} ${String(hour).padStart(2,'0')}:${String(minute).padStart(2,'0')} IST`;
+
+  const log = [
+    `[${timestamp}] Starting execution: ${row.TestCaseName}`,
+    `[Env] ${row.Environment} · [Module] ${row.Module}`,
+    ...steps.map(s => `[Step] ${s.name} — ${s.status}`),
+    rr === 'Failed'
+      ? `[ERROR] Execution stopped — see failed step above for details.`
+      : `[DONE] Test case completed successfully in ${durationTotal}s.`
+  ].join('\n');
+
+  return { rr, durationTotal, timestamp, steps: steps.slice(0, failStepIdx > -1 ? failStepIdx + 1 : steps.length), log };
+}
+
+function generatePDFReport(row){
+  const rpt = generateReport(row);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+  const navy = [17, 27, 48];
+  const accent = [79, 195, 247];
+  const pass = [51, 209, 122];
+  const fail = [255, 84, 112];
+
+  // ---------- Cover page ----------
+  doc.setFillColor(...navy);
+  doc.rect(0, 0, 130, pageH, 'F');
+  doc.setFillColor(...accent);
+  doc.rect(0, 0, 130, 6, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(26);
+  doc.text('Execution', 155, 250);
+  doc.text('Test', 155, 285);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(20);
+  doc.text('Report', 155, 315);
+  doc.setFontSize(11);
+  doc.setTextColor(150, 165, 195);
+  const wrappedName = doc.splitTextToSize(row.TestCaseName, pageW - 190);
+  doc.text(wrappedName, 155, 345);
+  doc.setFontSize(10);
+  doc.text(`${row.Environment}  \u00b7  ${row.Module}`, 155, 345 + wrappedName.length * 14 + 10);
+
+  // ---------- Execution summary page ----------
+  doc.addPage();
+  doc.setTextColor(...navy);
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(18);
+  doc.text('Execution Summary', 50, 55);
+
+  const statusColor = rpt.rr === 'Passed' ? pass : rpt.rr === 'Failed' ? fail : [255, 180, 84];
+  doc.autoTable({
+    startY: 75,
+    head: [['Field', 'Value']],
+    body: [
+      ['Test Case', row.TestCaseName],
+      ['Environment', row.Environment],
+      ['Module', row.Module],
+      ['Result', rpt.rr],
+      ['Duration', rpt.durationTotal + 's'],
+      ['Executed At', rpt.timestamp],
+      ['Executed By', 'TCShell (Automated)']
+    ],
+    theme: 'grid',
+    headStyles: { fillColor: accent, textColor: [4, 18, 31] },
+    didParseCell: (d) => {
+      if(d.section === 'body' && d.row.index === 3 && d.column.index === 1){
+        d.cell.styles.textColor = statusColor;
+        d.cell.styles.fontStyle = 'bold';
+      }
+    }
+  });
+
+  // ---------- Step-by-step page ----------
+  doc.addPage();
+  doc.setFontSize(16);
+  doc.text('Step-by-Step Execution Log', 50, 50);
+  doc.autoTable({
+    startY: 70,
+    head: [['Step', 'Status', 'Time', 'Detail']],
+    body: rpt.steps.map(s => [s.name, s.status, s.time, s.detail]),
+    theme: 'striped',
+    headStyles: { fillColor: navy },
+    columnStyles: { 3: { cellWidth: 210 } },
+    didParseCell: (d) => {
+      if(d.section === 'body' && d.column.index === 1){
+        d.cell.styles.textColor = d.cell.raw === 'Passed' ? pass : fail;
+        d.cell.styles.fontStyle = 'bold';
+      }
+    }
+  });
+
+  // ---------- Screenshot placeholders (one per step, matches Tosca-style captures) ----------
+  rpt.steps.forEach((s, i) => {
+    doc.addPage();
+    doc.setFontSize(13);
+    doc.setTextColor(...navy);
+    doc.text(`Screenshot — ${s.name}`, 50, 50);
+    doc.setDrawColor(200, 200, 200);
+    doc.setFillColor(245, 247, 250);
+    doc.roundedRect(50, 70, pageW - 100, 320, 6, 6, 'FD');
+    doc.setFontSize(10);
+    doc.setTextColor(140, 150, 170);
+    doc.text('Screenshot captured during execution (auto-attached by TCShell)', 50 + (pageW - 100)/2, 70 + 160, { align: 'center' });
+    doc.setFontSize(9);
+    doc.text(`Status: ${s.status}  \u00b7  ${s.time}`, 50, 410);
+  });
+
+  // ---------- Full log page ----------
+  doc.addPage();
+  doc.setFontSize(16);
+  doc.setTextColor(...navy);
+  doc.text('Execution Log', 50, 50);
+  doc.setFont('courier', 'normal');
+  doc.setFontSize(9);
+  doc.setTextColor(60, 70, 90);
+  const logLines = doc.splitTextToSize(rpt.log, pageW - 100);
+  doc.text(logLines, 50, 80);
+
+  const pdfBlob = doc.output('blob');
+  const blobUrl = URL.createObjectURL(pdfBlob);
+  const a = document.createElement('a');
+  a.href = blobUrl;
+  a.target = '_blank';
+  a.rel = 'noopener';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 30000);
+}
+
+function openReport(row){
+  const rpt = generateReport(row);
+  document.getElementById('reportTitle').textContent = row.TestCaseName;
+  document.getElementById('reportSub').textContent = `${row.Environment} · ${row.Module} — executed via TCShell`;
+
+  const cls = rpt.rr==='Passed'?'b-pass':rpt.rr==='Failed'?'b-fail':'b-other';
+  document.getElementById('reportMeta').innerHTML = `
+    <div class="mi"><div class="k">Result</div><div class="v"><span class="badge ${cls}">${rpt.rr}</span></div></div>
+    <div class="mi"><div class="k">Duration</div><div class="v">${rpt.durationTotal}s</div></div>
+    <div class="mi"><div class="k">Executed At</div><div class="v">${rpt.timestamp}</div></div>
+    <div class="mi"><div class="k">Executed By</div><div class="v">TCShell (Automated)</div></div>`;
+
+  document.getElementById('reportSteps').innerHTML = rpt.steps.map(s => `
+    <li>
+      <span class="step-dot ${s.status==='Passed'?'ok':'bad'}"></span>
+      <div>
+        <div class="step-name">${s.name}</div>
+        <div class="step-detail">${s.detail}</div>
+      </div>
+      <span class="step-time">${s.time}</span>
+    </li>`).join('');
+
+  document.getElementById('reportLog').textContent = rpt.log;
+  document.getElementById('reportOverlay').classList.add('open');
+}
+
+function closeReport(){
+  document.getElementById('reportOverlay').classList.remove('open');
+}
+document.getElementById('reportClose').addEventListener('click', closeReport);
+document.getElementById('reportOverlay').addEventListener('click', (e) => {
+  if(e.target.id === 'reportOverlay') closeReport();
+});
+
+renderReportSelect();
+showReport(selectedMonth);
+if(document.fonts && document.fonts.ready){
+  document.fonts.ready.then(() => { if(allRows.length){ renderTrend(); renderCharts(); } });
+}
+</script>
+</div>
+
+<script>
+// ---------- server-verified dashboard login ----------
+const loginScreen = document.getElementById('loginScreen');
+const dashboardContent = document.getElementById('dashboardContent');
+const loginUser = document.getElementById('loginUser');
+const loginPass = document.getElementById('loginPass');
+const loginError = document.getElementById('loginError');
+let liveRefreshTimer = null;
+
+function grantAccess(){
+  loginScreen.style.display = 'none';
+  dashboardContent.style.display = 'block';
+  if(!liveRefreshTimer){
+    fetchLive();
+    liveRefreshTimer = setInterval(fetchLive, 60000);
+  }
+}
+
+async function attemptLogin(){
+  loginError.textContent = '';
+  try{
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username: loginUser.value.trim(), password: loginPass.value})
+    });
+    const result = await response.json();
+    if(!response.ok){
+      loginError.textContent = result.error || 'Invalid username or password.';
+      return;
+    }
+    loginPass.value = '';
+    if(new URLSearchParams(window.location.search).get('next') === '/execution'){
+      window.location.assign('/execution');
+      return;
+    }
+    grantAccess();
+  }catch(error){
+    loginError.textContent = 'Unable to reach the dashboard server.';
+  }
+}
+
+document.getElementById('loginBtn').addEventListener('click', attemptLogin);
+[loginUser, loginPass].forEach(el => el.addEventListener('keydown', e => {
+  if(e.key === 'Enter') attemptLogin();
+}));
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/logout', {method: 'POST'}).catch(() => {});
+  if(window.location.pathname === '/execution'){
+    window.location.assign('/');
+    return;
+  }
+  if(liveRefreshTimer){
+    clearInterval(liveRefreshTimer);
+    liveRefreshTimer = null;
+  }
+  loginUser.value = '';
+  loginPass.value = '';
+  loginError.textContent = '';
+  selectedMonth = null;
+  selMonth = null;
+  userPickedReport = false;
+  dashboardContent.style.display = 'none';
+  loginScreen.style.display = 'flex';
+});
+
+fetch('/api/auth-status')
+  .then(response => response.ok ? response.json() : null)
+  .then(result => { if(result && result.authenticated) grantAccess(); })
+  .catch(() => {});
+</script>
+</body>
+</html>

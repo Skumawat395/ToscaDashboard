@@ -1,5 +1,12 @@
+# Runtime data and secrets: .env, SQLite DB, RawData.txt (TCShell output),
+# legacy ExecutionResult.xlsx, generated ToscaExecutionDashboard.html
+data/
+
+# Secrets anywhere else
 .env
 **/.env
+
+# Python
 __pycache__/
 *.py[cod]
 *.sqlite3

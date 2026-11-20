@@ -12,11 +12,25 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
-BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
-DATABASE_FILE = Path(os.getenv("TOSCA_SQLITE_FILE", BASE_DIR / "tosca_results.sqlite3"))
+BASE_DIR = Path(__file__).resolve().parent            # dashboard/  (code)
+PROJECT_DIR = BASE_DIR.parent                          # project root
+DATA_DIR = Path(os.getenv("TOSCA_DATA_DIR") or PROJECT_DIR / "data")  # data/ (git-ignored)
+ENV_FILE = DATA_DIR / ".env"
+
+
+def load_env_file(path: Path = ENV_FILE) -> None:
+    """Apply data/.env on every (re)start so edits take effect after the debug
+    reloader restarts. Empty values are ignored so they never blank out a
+    setting that is already present in the environment."""
+    for key, value in dotenv_values(path).items():
+        if value:
+            os.environ[key] = value
+
+
+load_env_file()
+DATABASE_FILE = Path(os.getenv("TOSCA_SQLITE_FILE") or DATA_DIR / "tosca_results.sqlite3")
 
 DATE_FORMATS = (
     "%d-%m-%Y %H:%M:%S",
@@ -85,21 +99,132 @@ def initialize_database(db_path: Path | str = DATABASE_FILE) -> None:
             );
             CREATE INDEX IF NOT EXISTS test_case_results_start_time_idx
                 ON test_case_results (start_time);
+            CREATE INDEX IF NOT EXISTS test_case_results_identity_idx
+                ON test_case_results (environment_name, module_name, testcase_name, start_time);
             """
         )
 
 
+def _result_identity(record: dict[str, Any]) -> tuple[str, str, str, str | None]:
+    """One Tosca test case log = environment + module + test case + start time."""
+    return (
+        str(record.get("Environment_Name") or ""),
+        str(record.get("Module_Name") or ""),
+        str(record.get("TestCase_Name") or ""),
+        _timestamp(record.get("StartTime")),
+    )
+
+
+DEFAULT_RUN_GAP_MINUTES = 60
+
+
+def _new_records(
+    records: list[dict[str, Any]], db_path: Path | str
+) -> list[dict[str, Any]]:
+    """Return only the logs not stored yet (also drops duplicates within the batch)."""
+    initialize_database(db_path)
+    with _connection(db_path) as connection:
+        existing = set(
+            connection.execute(
+                "SELECT environment_name, module_name, testcase_name, start_time "
+                "FROM test_case_results"
+            ).fetchall()
+        )
+
+    new_records = []
+    for record in records:
+        identity = _result_identity(record)
+        if identity in existing:
+            continue  # already imported, or the same log read twice in this batch
+        existing.add(identity)
+        new_records.append(record)
+    return new_records
+
+
+def _parsed_time(record: dict[str, Any], key: str) -> datetime | None:
+    value = _timestamp(record.get(key))
+    if not value:
+        return None
+    parsed = datetime.fromisoformat(value)
+    return parsed.replace(tzinfo=None)
+
+
+def group_into_executions(
+    records: list[dict[str, Any]], gap_minutes: float = DEFAULT_RUN_GAP_MINUTES
+) -> list[list[dict[str, Any]]]:
+    """Split logs into separate executions wherever nothing ran for > gap_minutes.
+
+    Logs are ordered by start time. A new execution starts when a log starts
+    more than ``gap_minutes`` after the previous logs finished. Logs without a
+    start time are kept with the latest execution.
+    """
+    timed = [r for r in records if _parsed_time(r, "StartTime")]
+    untimed = [r for r in records if not _parsed_time(r, "StartTime")]
+    timed.sort(key=lambda r: _parsed_time(r, "StartTime"))
+
+    groups: list[list[dict[str, Any]]] = []
+    group_end: datetime | None = None
+    for record in timed:
+        start = _parsed_time(record, "StartTime")
+        end = _parsed_time(record, "EndTime") or start
+        if group_end is None or (start - group_end).total_seconds() > gap_minutes * 60:
+            groups.append([])
+            group_end = end
+        groups[-1].append(record)
+        group_end = max(group_end, end)
+
+    if untimed:
+        if groups:
+            groups[-1].extend(untimed)
+        else:
+            groups.append(untimed)
+    return groups
+
+
+def save_new_executions(
+    records: list[dict[str, Any]],
+    db_path: Path | str = DATABASE_FILE,
+    gap_minutes: float | None = None,
+) -> list[str]:
+    """Store logs not in the database yet, one run (report) per execution.
+
+    TCShell returns every log of every execution entry. Logs imported earlier
+    are skipped; the remaining ones are split by time gaps, so two executions
+    done before one import still become two separate reports. Returns the new
+    run_ids, oldest first (empty when nothing was new).
+    """
+    if not records:
+        raise ValueError("Cannot store an execution run with no testcase records.")
+    if gap_minutes is None:
+        gap_minutes = float(os.getenv("RUN_GAP_MINUTES") or DEFAULT_RUN_GAP_MINUTES)
+
+    new_records = _new_records(records, db_path)
+    return [
+        _insert_run(group, db_path)
+        for group in group_into_executions(new_records, gap_minutes)
+    ]
+
+
 def save_execution_run(
     records: list[dict[str, Any]], db_path: Path | str = DATABASE_FILE
-) -> str:
-    """Commit a complete run locally before attempting any cloud operation."""
+) -> str | None:
+    """Store logs not in the database yet as ONE run (used for the legacy import).
+
+    Returns the new run_id, or None when nothing new was found.
+    """
     if not records:
         raise ValueError("Cannot store an execution run with no testcase records.")
 
-    initialize_database(db_path)
+    new_records = _new_records(records, db_path)
+    if not new_records:
+        return None
+    return _insert_run(new_records, db_path)
+
+
+def _insert_run(new_records: list[dict[str, Any]], db_path: Path | str) -> str:
     run_id = str(uuid.uuid4())
     started_at = min(
-        (_timestamp(record.get("StartTime")) for record in records if record.get("StartTime")),
+        (_timestamp(record.get("StartTime")) for record in new_records if record.get("StartTime")),
         default=None,
     ) or datetime.now().astimezone().isoformat()
     completed_at = datetime.now().astimezone().isoformat()
@@ -130,7 +255,7 @@ def save_execution_run(
                     str(record.get("CreatedBy") or ""),
                     _timestamp(record.get("CreatedAt")),
                 )
-                for index, record in enumerate(records)
+                for index, record in enumerate(new_records)
             ],
         )
     return run_id
@@ -160,7 +285,7 @@ def _to_dashboard_row(item: dict[str, Any]) -> dict[str, Any]:
             "Environment_Name": item["environment_name"],
             "Module_Name": item["module_name"],
             "TestCase_Name": item["testcase_name"],
-            # Field names read by DashBoard_Light.html
+            # Field names read by web/dashboard.html
             "Environment": item["environment_name"],
             "Module": item["module_name"],
             "TestCaseName": item["testcase_name"],
@@ -192,10 +317,12 @@ _RESULT_COLUMNS = (
 
 def get_cloud_execution_results(page_size: int = 1000) -> list[dict[str, Any]]:
     """Read every testcase row from Supabase, paging past the API row limit."""
-    url = os.getenv("SUPABASE_URL", "").strip()
-    key = os.getenv("SUPABASE_KEY", "").strip()
-    if not url or not key:
+    url, key, problem = _supabase_credentials()
+    if problem == "not_configured":
         raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set to read from Supabase.")
+    if problem:
+        # Publishable/anon keys hit Row Level Security and silently return zero rows.
+        raise RuntimeError("SUPABASE_KEY must be a server-side secret (service_role) key to read results.")
 
     from supabase import create_client
 
@@ -232,20 +359,25 @@ def get_dashboard_results(source: str | None = None) -> tuple[list[dict[str, Any
     if source == "supabase":
         return get_cloud_execution_results(), "supabase"
     try:
-        return get_cloud_execution_results(), "supabase"
+        cloud_rows = get_cloud_execution_results()
     except Exception:
         return get_execution_results(), "local"
+    if not cloud_rows:
+        # An empty cloud table while local runs exist means sync hasn't caught up.
+        local_rows = get_execution_results()
+        if local_rows:
+            return local_rows, "local"
+    return cloud_rows, "supabase"
 
 
-def sync_pending_runs(db_path: Path | str = DATABASE_FILE) -> dict[str, int | str]:
-    """Upsert unsynced local runs; any failure leaves them queued for retry."""
-    initialize_database(db_path)
+def _supabase_credentials() -> tuple[str, str, str | None]:
+    """Return (url, key, problem). problem is a status string when unusable."""
     url = os.getenv("SUPABASE_URL", "").strip()
     key = os.getenv("SUPABASE_KEY", "").strip()
     if not url or not key:
-        return {"status": "not_configured", "synced_runs": 0}
+        return url, key, "not_configured"
     if key.startswith("sb_publishable_"):
-        return {"status": "server_secret_required", "synced_runs": 0}
+        return url, key, "server_secret_required"
     if key.count(".") == 2:
         try:
             payload = key.split(".")[1]
@@ -254,7 +386,16 @@ def sync_pending_runs(db_path: Path | str = DATABASE_FILE) -> dict[str, int | st
         except (ValueError, json.JSONDecodeError):
             role = None
         if role != "service_role":
-            return {"status": "server_secret_required", "synced_runs": 0}
+            return url, key, "server_secret_required"
+    return url, key, None
+
+
+def sync_pending_runs(db_path: Path | str = DATABASE_FILE) -> dict[str, int | str]:
+    """Upsert unsynced local runs; any failure leaves them queued for retry."""
+    initialize_database(db_path)
+    url, key, problem = _supabase_credentials()
+    if problem:
+        return {"status": problem, "synced_runs": 0}
 
     try:
         from supabase import create_client

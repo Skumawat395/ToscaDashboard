@@ -1,11 +1,13 @@
 """Tosca dashboard server backed by local SQLite with Supabase sync.
 
-Place this file in the same folder as:
-  - DashBoard_Light.html
-    - tosca_results.sqlite3
+Layout:
+  dashboard/web/dashboard.html          dashboard page (served at /)
+  data/.env                             settings and secrets
+  data/tosca_results.sqlite3            local results database
+  data/ToscaExecutionDashboard.html     static snapshot (served at /execution)
 
-Install:  pip install -r requirements.txt
-Run:      python server.py
+Install:  pip install -r dashboard/requirements.txt
+Run:      python dashboard/server.py
 Open:     http://127.0.0.1:5000
 
 Dashboard rows are read from Supabase by default (RESULTS_SOURCE=auto), falling
@@ -21,16 +23,20 @@ import secrets
 from functools import wraps
 from pathlib import Path
 
-from dotenv import load_dotenv
 from flask import Flask, jsonify, redirect, request, send_file, session, url_for
 from typing import Any
 
-from result_store import DATABASE_FILE, get_dashboard_results, sync_pending_runs, sync_status
+from result_store import (
+    DATA_DIR,
+    DATABASE_FILE,
+    get_dashboard_results,
+    sync_pending_runs,
+    sync_status,
+)
 
 BASE_DIR = Path(__file__).resolve().parent
-load_dotenv(BASE_DIR / ".env")
 
-DASHBOARD_FILE = Path(os.getenv("TOSCA_DASHBOARD_FILE", BASE_DIR / "DashBoard_Light.html"))
+DASHBOARD_FILE = Path(os.getenv("TOSCA_DASHBOARD_FILE") or BASE_DIR / "web" / "dashboard.html")
 DASHBOARD_USERNAME = os.getenv("DASHBOARD_USERNAME", "")
 DASHBOARD_PASSWORD = os.getenv("DASHBOARD_PASSWORD", "")
 
@@ -60,11 +66,23 @@ def dashboard():
     if not DASHBOARD_FILE.exists():
         return (
             f"Dashboard HTML not found: {DASHBOARD_FILE}. "
-            "Place DashBoard_Light.html beside server.py or set "
+            "Place dashboard.html in dashboard/web/ or set "
             "TOSCA_DASHBOARD_FILE.",
             404,
         )
     return send_file(DASHBOARD_FILE)
+
+
+ASSET_FILES = {"tf-logo.png", "tf-logo.svg"}
+
+
+@app.get("/assets/<name>")
+def asset(name: str):
+    """Static brand assets (the TF logo) that sit next to dashboard.html."""
+    path = DASHBOARD_FILE.parent / name
+    if name not in ASSET_FILES or not path.exists():
+        return "Not found", 404
+    return send_file(path)
 
 
 @app.get("/execution")
@@ -72,9 +90,9 @@ def execution_dashboard():
     if not session.get("dashboard_authenticated"):
         return redirect(url_for("dashboard", next="/execution"))
 
-    execution_file = BASE_DIR / "ToscaExecutionDashboard.html"
+    execution_file = DATA_DIR / "ToscaExecutionDashboard.html"
     if not execution_file.exists():
-        return "Execution dashboard not found. Run ToscaDB.py first.", 404
+        return "Execution dashboard not found. Run build_snapshot.py first.", 404
 
     response = send_file(execution_file)
     response.headers["Cache-Control"] = "no-store"

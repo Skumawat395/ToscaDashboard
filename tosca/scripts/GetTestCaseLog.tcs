@@ -5,6 +5,6 @@ get Result
 get StartTime
 get EndTime
 
-For ->ExecutedTestCase CallOnEach "ToscaScripts\\GetTestCaseName.tcs"
+For ->ExecutedTestCase CallOnEach "scripts\\GetTestCaseName.tcs"
 
 Exit

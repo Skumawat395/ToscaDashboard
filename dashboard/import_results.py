@@ -1,11 +1,17 @@
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font, Alignment, Border, Side
-from datetime import datetime
+import sys
+
+# Console output can be redirected to a log; never crash on characters like '→'.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(errors="replace")
+
+from openpyxl import load_workbook
 from pathlib import Path
 from result_store import (
+    DATA_DIR,
     DATABASE_FILE,
     get_execution_results,
     save_execution_run,
+    save_new_executions,
     sync_pending_runs,
 )
 
@@ -16,8 +22,8 @@ from result_store import (
 
 BASE_DIR = Path(__file__).resolve().parent
 
-INPUT_FILE = BASE_DIR / "RawData.txt"
-OUTPUT_FILE = BASE_DIR / "ExecutionResult.xlsx"
+INPUT_FILE = DATA_DIR / "RawData.txt"
+OUTPUT_FILE = DATA_DIR / "ExecutionResult.xlsx"   # legacy history, imported once into an empty DB
 
 
 # ============================================================
@@ -309,51 +315,6 @@ def parse_tosca_data(lines):
 
 
 # ============================================================
-# CONVERT DATE/TIME
-# ============================================================
-
-def convert_datetime(value):
-
-    if not value:
-        return ""
-
-    if isinstance(value, datetime):
-        return value
-
-    formats = [
-
-        "%d-%m-%Y %H:%M:%S",
-
-        "%d-%m-%Y %H:%M",
-
-        "%d/%m/%Y %H:%M:%S",
-
-        "%d/%m/%Y %H:%M",
-
-        "%Y-%m-%d %H:%M:%S",
-
-        "%Y-%m-%d %H:%M"
-    ]
-
-    for fmt in formats:
-
-        try:
-
-            return datetime.strptime(
-                value,
-                fmt
-            )
-
-        except ValueError:
-            pass
-
-    # If conversion fails,
-    # keep original text.
-
-    return value
-
-
-# ============================================================
 # VALIDATE RECORDS
 # ============================================================
 
@@ -474,15 +435,9 @@ def validate_records(records):
 
 
 # ============================================================
-# CREATE EXECUTION RESULT EXCEL
+# ONE-TIME LEGACY EXCEL IMPORT (only when the database is empty)
 # ============================================================
 
-def create_execution_result(
-    records,
-    output_file
-):
-
-    print()
 def import_legacy_excel_if_needed():
     if get_execution_results(DATABASE_FILE) or not OUTPUT_FILE.exists():
         return 0
@@ -541,209 +496,6 @@ def import_legacy_excel_if_needed():
         print(f"Imported {len(records)} legacy rows from Excel into local SQLite.")
     return len(records)
 
-    print("=" * 70)
-    print("CREATING EXECUTION RESULT")
-    print("=" * 70)
-
-    # --------------------------------------------------------
-    # Create new Excel workbook
-    #
-    # IMPORTANT:
-    # We use Workbook(), NOT load_workbook().
-    #
-    # RawData.txt is a TEXT file.
-    # We are creating a NEW Excel file.
-    # --------------------------------------------------------
-
-    workbook = Workbook()
-
-    worksheet = workbook.active
-
-    worksheet.title = "ExecutionResult"
-
-    # ========================================================
-    # HEADERS
-    # ========================================================
-
-    for column_number, header in enumerate(
-        HEADERS,
-        start=1
-    ):
-
-        cell = worksheet.cell(
-            row=1,
-            column=column_number,
-            value=header
-        )
-
-        cell.font = Font(
-            bold=True
-        )
-
-        cell.alignment = Alignment(
-            horizontal="center",
-            vertical="center",
-            wrap_text=True
-        )
-
-    # ========================================================
-    # DATA
-    # ========================================================
-
-    for row_number, record in enumerate(
-        records,
-        start=2
-    ):
-
-        for column_number, header in enumerate(
-            HEADERS,
-            start=1
-        ):
-
-            value = record.get(
-                header,
-                ""
-            )
-
-            # ------------------------------------------------
-            # Convert date/time columns
-            # ------------------------------------------------
-
-            if header in [
-                "StartTime",
-                "EndTime",
-                "CreatedAt"
-            ]:
-
-                value = convert_datetime(value)
-
-            cell = worksheet.cell(
-                row=row_number,
-                column=column_number,
-                value=value
-            )
-
-            cell.alignment = Alignment(
-                vertical="center",
-                wrap_text=True
-            )
-
-            # ------------------------------------------------
-            # Excel date format
-            # ------------------------------------------------
-
-            if isinstance(value, datetime):
-
-                cell.number_format = (
-                    "dd-mm-yyyy hh:mm:ss"
-                )
-
-    # ========================================================
-    # BORDERS
-    # ========================================================
-
-    border = Border(
-
-        left=Side(style="thin"),
-
-        right=Side(style="thin"),
-
-        top=Side(style="thin"),
-
-        bottom=Side(style="thin")
-    )
-
-    last_row = len(records) + 1
-
-    for row in worksheet.iter_rows(
-
-        min_row=1,
-
-        max_row=last_row,
-
-        min_col=1,
-
-        max_col=len(HEADERS)
-    ):
-
-        for cell in row:
-
-            cell.border = border
-
-    # ========================================================
-    # COLUMN WIDTHS
-    # ========================================================
-
-    column_widths = {
-
-        "A": 22,
-
-        "B": 35,
-
-        "C": 70,
-
-        "D": 15,
-
-        "E": 22,
-
-        "F": 22,
-
-        "G": 35,
-
-        "H": 22
-    }
-
-    for column, width in column_widths.items():
-
-        worksheet.column_dimensions[
-            column
-        ].width = width
-
-    # ========================================================
-    # ROW HEIGHT
-    # ========================================================
-
-    worksheet.row_dimensions[
-        1
-    ].height = 30
-
-    for row_number in range(
-        2,
-        last_row + 1
-    ):
-
-        worksheet.row_dimensions[
-            row_number
-        ].height = 45
-
-    # ========================================================
-    # FREEZE HEADER
-    # ========================================================
-
-    worksheet.freeze_panes = "A2"
-
-    # ========================================================
-    # FILTER
-    # ========================================================
-
-    worksheet.auto_filter.ref = (
-        f"A1:H{last_row}"
-    )
-
-    # ========================================================
-    # SAVE EXCEL
-    # ========================================================
-
-    workbook.save(
-        output_file
-    )
-
-    print()
-    print("Excel successfully created!")
-    print()
-    print(f"Output File : {output_file}")
-    print(f"Total Rows  : {len(records)}")
-
 
 # ============================================================
 # MAIN
@@ -791,7 +543,7 @@ def main():
         # STEP 4: SAVE LOCALLY AND SYNC TO SUPABASE
         # ====================================================
 
-        run_id = save_execution_run(records, DATABASE_FILE)
+        run_ids = save_new_executions(records, DATABASE_FILE)
         cloud_sync = sync_pending_runs()
 
         # ====================================================
@@ -805,10 +557,16 @@ def main():
 
         print()
         print(f"Input  : {INPUT_FILE}")
-        print(f"Local DB: {BASE_DIR / 'tosca_results.sqlite3'}")
-        print(f"Run ID : {run_id}")
+        print(f"Local DB: {DATABASE_FILE}")
+        print(f"New reports : {len(run_ids) or 'none - no new executions since the last import'}")
+        for run_id in run_ids:
+            print(f"  Run ID : {run_id}")
         print(f"Cloud sync: {cloud_sync['status']} ({cloud_sync['synced_runs']} run(s))")
-        print(f"Rows   : {len(records)}")
+        print(f"Rows read from Tosca : {len(records)}")
+        if run_ids:
+            print(f"New results were added as {len(run_ids)} new report(s).")
+        else:
+            print("All results were already imported; nothing was added.")
         print()
 
     except Exception as error:
