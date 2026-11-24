@@ -1,4 +1,4 @@
-# Tosca Execution Dashboard
+# Tricentis Tosca SAP Release Quality Intelligence Dashboard
 
 Collects Tosca execution results after each run, stores them in a local SQLite database, copies them to Supabase, and shows them in a web dashboard with login.
 

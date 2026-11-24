@@ -10,7 +10,7 @@ from pathlib import Path
 from result_store import DATABASE_FILE, DATA_DIR, get_execution_results
 
 # ============================================================
-# TOSCA EXECUTION DASHBOARD - LOCAL DATABASE DATA GENERATOR
+# TRICENTIS TOSCA SAP RELEASE QUALITY INTELLIGENCE DASHBOARD - LOCAL DATABASE DATA GENERATOR
 # ============================================================
 # Reads:
 #   data/tosca_results.sqlite3
@@ -344,7 +344,7 @@ def generate_dashboard(records):
 
 def main():
     print("=" * 75)
-    print("             TOSCA EXECUTION DASHBOARD")
+    print("  TRICENTIS TOSCA SAP RELEASE QUALITY INTELLIGENCE DASHBOARD")
     print("                 LOCAL DATABASE")
     print("=" * 75)
 
