@@ -30,6 +30,7 @@ from result_store import (
     DATA_DIR,
     DATABASE_FILE,
     get_dashboard_results,
+    get_results_version,
     sync_pending_runs,
     sync_status,
 )
@@ -143,6 +144,19 @@ def api_results():
         return jsonify({"error": str(exc)}), 404
     except Exception as exc:
         app.logger.exception("Unable to load Tosca execution results")
+        return jsonify({"error": str(exc)}), 500
+
+
+@app.get("/api/results-version")
+@login_required
+def api_results_version():
+    """Tiny change signal; the dashboard reloads /api/results only when it changes."""
+    try:
+        response = jsonify(get_results_version())
+        response.headers["Cache-Control"] = "no-store"
+        return response
+    except Exception as exc:
+        app.logger.exception("Unable to check results version")
         return jsonify({"error": str(exc)}), 500
 
 

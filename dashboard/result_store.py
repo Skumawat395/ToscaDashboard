@@ -370,6 +370,57 @@ def get_dashboard_results(source: str | None = None) -> tuple[list[dict[str, Any
     return cloud_rows, "supabase"
 
 
+def _local_results_version(db_path: Path | str = DATABASE_FILE) -> dict[str, Any]:
+    initialize_database(db_path)
+    with _connection(db_path) as connection:
+        count = connection.execute("SELECT COUNT(*) FROM test_case_results").fetchone()[0]
+        last = connection.execute("SELECT MAX(completed_at) FROM execution_runs").fetchone()[0]
+    return {"count": count, "last_updated": last}
+
+
+def _cloud_results_version() -> dict[str, Any]:
+    url, key, problem = _supabase_credentials()
+    if problem:
+        raise RuntimeError(f"Supabase unavailable: {problem}")
+    from supabase import create_client
+
+    client = create_client(url, key)
+    # head-only count + newest import time: two tiny queries instead of downloading every row
+    count = client.table("test_case_results").select("run_id", count="exact", head=True).execute().count or 0
+    latest = (
+        client.table("execution_runs")
+        .select("completed_at")
+        .order("completed_at", desc=True, nullsfirst=False)
+        .limit(1)
+        .execute()
+        .data
+    )
+    return {"count": count, "last_updated": latest[0]["completed_at"] if latest else None}
+
+
+def get_results_version(source: str | None = None) -> dict[str, Any]:
+    """Cheap change signal for the dashboard: row count + newest import time.
+
+    Mirrors get_dashboard_results() source selection, so the dashboard only
+    downloads all rows again when this value changes.
+    """
+    source = (source or os.getenv("RESULTS_SOURCE", "auto")).strip().lower()
+    if source == "local":
+        info, used = _local_results_version(), "local"
+    elif source == "supabase":
+        info, used = _cloud_results_version(), "supabase"
+    else:
+        try:
+            info, used = _cloud_results_version(), "supabase"
+            if not info["count"]:
+                local = _local_results_version()
+                if local["count"]:
+                    info, used = local, "local"
+        except Exception:
+            info, used = _local_results_version(), "local"
+    return {**info, "source": used, "version": f"{used}|{info['count']}|{info['last_updated']}"}
+
+
 def _supabase_credentials() -> tuple[str, str, str | None]:
     """Return (url, key, problem). problem is a status string when unusable."""
     url = os.getenv("SUPABASE_URL", "").strip()

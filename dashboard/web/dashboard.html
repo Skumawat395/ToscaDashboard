@@ -76,13 +76,13 @@
     border-bottom:1px solid var(--line);
   }
   .appbar-inner{
-    max-width:1280px; margin:0 auto; padding:12px 24px;
+    max-width:none; margin:0; padding:12px 24px;
     display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;
   }
   .brand{display:flex; align-items:center; gap:12px; min-width:0;}
   .brand-mark{
-    width:36px; height:36px; border-radius:10px; flex:0 0 auto;
-    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:17px;
+    width:52px; height:52px; border-radius:12px; flex:0 0 auto;
+    display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:22px;
     background:linear-gradient(135deg, var(--accent), #1baf7a);
     box-shadow:0 4px 12px rgba(42,120,214,.28);
     position:relative; overflow:hidden; letter-spacing:-.5px;
@@ -93,9 +93,10 @@
   .login-icon{position:relative; overflow:hidden;}
   .login-icon:has(img){box-shadow:0 8px 24px rgba(20,30,60,.12); border:1px solid var(--line);}
   .login-icon img{padding:7px;}
-  .brand-name{font-size:var(--fs-header); font-weight:700; letter-spacing:-.2px; line-height:1.15;}
-  .brand-sub{font-size:11.5px; color:var(--muted);}
-  .appbar-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap;}
+  .brand-name{font-size:24px; font-weight:700; letter-spacing:-.3px; line-height:1.15;}
+  .brand-sub{font-size:12.5px; color:var(--muted);}
+  .appbar-actions{display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-left:auto; justify-content:flex-end;}
+  #logoutBtn{margin-left:8px;}
   .report-pick{display:flex; align-items:center; gap:8px;}
   .report-pick span{font-size:11px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px;}
   .sync{display:inline-flex; align-items:center; gap:7px; font-size:12px; color:var(--muted); white-space:nowrap;}
@@ -104,7 +105,7 @@
   .sync.err .sync-dot{background:var(--fail); box-shadow:0 0 0 3px var(--fail-soft);}
 
   /* ---- layout ---- */
-  .wrap{max-width:1280px; margin:0 auto; padding:28px 24px 64px;}
+  .wrap{max-width:none; margin:0; padding:24px 24px 64px;}
   .hero{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px;}
   .hero .sub{margin-top:6px;}
   .chips{display:flex; gap:8px; flex-wrap:wrap;}
@@ -120,9 +121,15 @@
   .stack > * + *{margin-top:20px;}
 
   /* ---- KPI tiles ---- */
-  .kpis{display:grid; grid-template-columns:2.1fr repeat(5, 1fr); gap:14px;}
+  .kpis{display:grid; grid-template-columns:1.7fr repeat(var(--kpi-cols, 5), minmax(0, 1fr)); gap:14px;}
+  .i-env{background:var(--accent-soft); color:var(--accent);}
+  .kpi-env .rate-pill{align-self:flex-start; font-size:11px; padding:2px 9px;}
+  .spark{margin-top:auto; padding-top:8px; height:40px; box-sizing:content-box;}
+  .spark svg{display:block; width:100%; height:40px; overflow:visible;}
+  .spark rect{opacity:.28; cursor:pointer; transition:opacity .12s ease;} .spark rect.on{opacity:1;} .spark rect:hover{opacity:.75;} .spark rect.on:hover{opacity:1;}
+  .kpi-env .kpi-value.good{color:var(--pass);} .kpi-env .kpi-value.warn{color:var(--other);} .kpi-env .kpi-value.bad{color:var(--fail);}
   .i-runs{background:var(--accent-soft); color:var(--accent);}
-  @media(max-width:1240px){ .kpis{grid-template-columns:repeat(5, minmax(0, 1fr));} .kpi-hero{grid-column:1 / -1;} }
+  @media(max-width:1400px){ .kpis{grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));} .kpi-hero{grid-column:1 / -1;} }
   @media(max-width:760px){ .kpis{grid-template-columns:repeat(2, minmax(0, 1fr));} }
   @media(max-width:340px){ .kpis{grid-template-columns:minmax(0, 1fr);} }
   @media(max-width:640px){ .kpis{gap:10px;} .kpi{padding:14px;} .kpi-value{font-size:26px;} .kpis > .kpi:last-child:nth-child(even){grid-column:1 / -1;} }
@@ -139,7 +146,7 @@
   .i-pass{background:var(--pass-soft); color:var(--pass);}
   .i-fail{background:var(--fail-soft); color:var(--fail);}
   .i-other{background:var(--other-soft); color:var(--other);}
-  .kpi-label{font-size:12px; font-weight:600; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0;}
+  .kpi-label{font-size:12px; font-weight:600; color:var(--muted); line-height:1.25; overflow-wrap:anywhere; min-width:0;}
   .kpi-value{font-size:30px; font-weight:750; letter-spacing:-.6px; line-height:1.05; font-variant-numeric:tabular-nums;}
   .kpi-foot{font-size:12px; color:var(--muted); font-variant-numeric:tabular-nums;}
   .kpi-hero{
@@ -215,6 +222,30 @@
   /* ---- monthly trend ---- */
   .trend-panel{display:flex; flex-direction:column; gap:18px;}
   .trend-scroll{overflow-x:auto;}
+  :root{ --env-1:#2a78d6; --env-2:#1baf7a; --env-3:#8a5cd6; --env-4:#e07b1a; --env-5:#d6457a; }
+  .tag-flaky{display:inline-block; margin-left:8px; padding:1px 7px; border-radius:6px; font-size:10.5px; font-weight:700;
+    letter-spacing:.3px; text-transform:uppercase; background:var(--other-soft); color:var(--text); border:1px solid var(--other); vertical-align:1px;}
+  .runs-cell{white-space:nowrap; font-size:12.5px; color:var(--text2);}
+  .runs-cell b{color:var(--fail); font-weight:700;}
+  .chips-toggle{background:transparent; border:1px solid var(--line); border-radius:99px; padding:3px 10px; font:inherit;
+    font-size:12px; font-weight:700; color:var(--text2); cursor:pointer; white-space:nowrap;}
+  .chips-toggle:hover{border-color:var(--accent); color:var(--text);}
+  .trend-scroll tr.chips-row td{padding-top:0; background:var(--panel2); cursor:default;}
+  .trend-scroll tr.chips-row .run-chips{max-width:none; padding:10px 0 4px;}
+  .delta{font-weight:700; font-size:12.5px; white-space:nowrap;}
+  .delta.up{color:var(--pass);} .delta.down{color:var(--fail);} .delta.flat{color:var(--muted);}
+  .analytics-grid{display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:20px; align-items:start;}
+  @media(max-width:1180px){ .analytics-grid{grid-template-columns:minmax(0, 1fr);} }
+  .env-trend-box{height:340px;}
+  .range-pick{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+  .range-pick button{background:var(--panel); border:0; padding:5px 11px; font:inherit; font-size:12px; font-weight:700; color:var(--muted); cursor:pointer;}
+  .range-pick button + button{border-left:1px solid var(--line);}
+  .range-pick button.on{background:var(--accent); color:#fff;}
+  table.top-fail td.num b{color:var(--fail);}
+  table.top-fail tbody tr{cursor:default;}
+  .fail-rate{display:flex; align-items:center; gap:8px; min-width:110px;}
+  .fail-rate .bar{flex:1; height:6px; border-radius:3px; background:var(--grid); overflow:hidden;}
+  .fail-rate .bar i{display:block; height:100%; background:var(--fail);}
   .mini-scroll{overflow-x:auto; margin:0 -4px;}
   #monthPanel{padding:6px 8px;}
   .trend-scroll table{min-width:720px;}
@@ -233,6 +264,7 @@
   .trend-legend span{display:inline-flex; align-items:center; gap:6px;}
   .trend-legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
   .trend-legend i.dash{width:16px; height:0; border-radius:0; border-top:2px dashed var(--muted);}
+  .trend-legend i.target{width:16px; height:0; border-radius:0; border-top:2px solid var(--pass);}
 
   /* ---- environment cards ---- */
   .env-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(440px, 1fr)); gap:16px;}
@@ -405,6 +437,42 @@
   .login-footnote{margin-top:22px; font-size:10.5px; color:#8c98ae; letter-spacing:.3px;}
   #dashboardContent{display:none;}
 
+  /* ---- left side menu ---- */
+  :root{ --nav-bg:#0f2747; --nav-text:#c9d5e6; --nav-hover:rgba(255,255,255,.08); --nav-line:rgba(255,255,255,.10); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --nav-bg:#11151c; --nav-text:#aab3c2; --nav-hover:rgba(255,255,255,.06); --nav-line:#2a2f39; } }
+  :root[data-theme="dark"]{ --nav-bg:#11151c; --nav-text:#aab3c2; --nav-hover:rgba(255,255,255,.06); --nav-line:#2a2f39; }
+  .shell{display:flex; min-height:100vh;}
+  .shell-main{flex:1 1 auto; min-width:0;}
+  .sidenav{
+    flex:0 0 232px; width:232px; position:sticky; top:0; height:100vh; overflow-y:auto;
+    background:var(--nav-bg); border-right:1px solid var(--nav-line);
+    display:flex; flex-direction:column; padding:18px 12px; gap:4px;
+  }
+  .sidenav-label{font-size:10.5px; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:var(--nav-text); opacity:.6; padding:6px 12px 8px;}
+  .nav-item{
+    display:flex; align-items:center; gap:12px; width:100%; text-align:left;
+    padding:11px 12px; border:0; border-radius:10px; background:transparent; cursor:pointer;
+    color:var(--nav-text); font:inherit; font-size:14px; font-weight:600;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item svg{width:20px; height:20px; flex:0 0 auto;}
+  .nav-item:hover{background:var(--nav-hover); color:#fff;}
+  .nav-item.active{background:var(--accent); color:#fff; box-shadow:0 6px 16px rgba(42,120,214,.35);}
+  .nav-item:focus-visible{outline:2px solid #fff; outline-offset:2px;}
+  .view[hidden]{display:none !important;}
+  @media(max-width:1024px){
+    .sidenav{flex-basis:72px; width:72px; padding:18px 10px;}
+    .sidenav-label, .nav-item span{display:none;}
+    .nav-item{justify-content:center; padding:12px 0;}
+  }
+  @media(max-width:640px){
+    .shell{flex-direction:column; min-height:0;}
+    .sidenav{position:static; height:auto; width:auto; flex-basis:auto; flex-direction:row; padding:8px 12px; gap:6px; border-right:0; border-bottom:1px solid var(--nav-line); overflow-x:auto;}
+    .nav-item{flex:1 1 0; justify-content:center; padding:10px 8px; font-size:12.5px; gap:6px;}
+    .nav-item span{display:inline; white-space:nowrap;}
+    .nav-item svg{width:16px; height:16px;}
+  }
+
   .nav-btn{
     background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:10px;
     padding:8px 14px; font-weight:650; font-size:13px; font-family:inherit; cursor:pointer;
@@ -443,7 +511,7 @@
     <div class="login-box">
       <div class="login-icon">🛡️<img src="/assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
       <h1>Tricentis Tosca SAP Release Quality Intelligence Dashboard</h1>
-      <div class="login-sub">Sign in to view sprint execution results</div>
+      <div class="login-sub">Sign in to view release quality results</div>
       <div class="login-field">
         <span class="field-icon">👤</span>
         <input type="text" id="loginUser" placeholder="Username" autocomplete="username">
@@ -459,13 +527,30 @@
   </div>
 
   <div id="dashboardContent">
+  <div class="shell">
+  <nav class="sidenav" aria-label="Dashboard sections">
+    <div class="sidenav-label">Menu</div>
+    <button class="nav-item active" type="button" data-view="overview" aria-current="page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
+      <span>Overview</span>
+    </button>
+    <button class="nav-item" type="button" data-view="reporting">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 17v-4M12 17V9M16 17v-6"/></svg>
+      <span>Execution Results</span>
+    </button>
+    <button class="nav-item" type="button" data-view="analytics">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="m4 15 5-5 4 4 7-7"/><path d="M15 7h5v5"/></svg>
+      <span>Trends &amp; Analytics</span>
+    </button>
+  </nav>
+  <div class="shell-main">
   <header class="appbar">
     <div class="appbar-inner">
       <div class="brand">
         <div class="brand-mark">TF<img src="/assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
         <div>
           <div class="brand-name">Tricentis Tosca SAP Release Quality Intelligence Dashboard</div>
-          <div class="brand-sub">Automated regression results</div>
+          <div class="brand-sub">SAP release regression · Tosca automation</div>
         </div>
       </div>
       <div class="appbar-actions">
@@ -474,10 +559,10 @@
           <select id="monthSelect" disabled><option value="">Loading…</option></select>
         </label>
         <label class="report-pick">
-          <span>Run</span>
+          <span>Execution</span>
           <select id="runSelect" disabled><option value="">Loading…</option></select>
         </label>
-        <span class="sync" id="syncStatus" title="Results refresh automatically every 60 seconds">
+        <span class="sync" id="syncStatus" title="When new execution results were last added. The page checks for new results every minute and reloads only when something changed.">
           <span class="sync-dot"></span><span id="syncText">Connecting…</span>
         </span>
         <button id="logoutBtn" class="nav-btn">⏻ Logout</button>
@@ -488,13 +573,13 @@
   <main class="wrap">
     <section class="hero">
       <div>
-        <div class="eyebrow">Execution report</div>
+        <div class="eyebrow">Release quality summary</div>
         <h1 id="heroTitle">Loading…</h1>
         <div class="sub" id="monthSubHeading">Loading the latest execution report…</div>
       </div>
-      <div class="chips" id="envChips"></div>
     </section>
 
+    <div class="view" data-view="overview">
     <section class="kpis">
       <div class="kpi kpi-hero">
         <div class="meter-head">
@@ -518,27 +603,33 @@
         <div class="kpi-top"><span class="kpi-icon i-total">Σ</span><span class="kpi-label">Test cases</span></div>
         <div class="kpi-value" id="totalNum">–</div>
         <div class="kpi-foot" id="totalFoot">&nbsp;</div>
+        <div class="spark" data-spark="total"></div>
       </div>
       <div class="kpi">
         <div class="kpi-top"><span class="kpi-icon i-pass">✓</span><span class="kpi-label">Passed</span></div>
         <div class="kpi-value" id="passNum">–</div>
         <div class="kpi-foot" id="passFoot">&nbsp;</div>
+        <div class="spark" data-spark="Passed"></div>
       </div>
       <div class="kpi">
         <div class="kpi-top"><span class="kpi-icon i-fail">✕</span><span class="kpi-label">Failed</span></div>
         <div class="kpi-value" id="failNum">–</div>
         <div class="kpi-foot" id="failFoot">&nbsp;</div>
+        <div class="spark" data-spark="Failed"></div>
       </div>
       <div class="kpi">
         <div class="kpi-top"><span class="kpi-icon i-other">!</span><span class="kpi-label">Other / Error</span></div>
         <div class="kpi-value" id="otherNum">–</div>
         <div class="kpi-foot" id="otherFoot">&nbsp;</div>
+        <div class="spark" data-spark="Other"></div>
       </div>
       <div class="kpi">
         <div class="kpi-top"><span class="kpi-icon i-runs">▶</span><span class="kpi-label" id="runsLabel">Executions</span></div>
         <div class="kpi-value" id="runsNum">–</div>
         <div class="kpi-foot" id="runsFoot">&nbsp;</div>
+        <div class="spark" data-spark="executions"></div>
       </div>
+      <!-- one card per environment, added by renderHero() -->
     </section>
 
     <div class="overview">
@@ -559,8 +650,32 @@
             <span><i style="background:var(--series-1)"></i><span id="legendOn">Month of the open report</span></span>
             <span><i style="background:var(--series-1-dim)"></i><span id="legendOff">Other months</span></span>
             <span><i class="dash"></i><span id="legendAvg">Average</span></span>
+            <span><i class="target"></i><span>Target 80%</span></span>
           </div>
           <div class="chart-box trend-box"><canvas id="trendChart" role="img" aria-label="Pass rate per month"></canvas></div>
+        </section>
+      </div>
+    </div>
+
+    </div>
+
+    <div class="view" data-view="analytics" hidden>
+    <div class="analytics-grid">
+      <div>
+        <div class="section-head"><h2>Pass rate by environment</h2><span class="panel-note">Last 12 months · target 80%</span></div>
+        <section class="panel">
+          <div class="chart-box env-trend-box"><canvas id="envTrendChart" role="img" aria-label="Pass rate per environment per month"></canvas></div>
+        </section>
+      </div>
+      <div>
+        <div class="section-head">
+          <h2>Top 10 failing test cases</h2>
+          <div class="range-pick" id="topFailRange" role="group" aria-label="Period">
+            <button type="button" data-m="3">3 mo</button><button type="button" data-m="6" class="on">6 mo</button><button type="button" data-m="12">12 mo</button>
+          </div>
+        </div>
+        <section class="panel">
+          <div class="mini-scroll" id="topFailWrap"></div>
         </section>
       </div>
     </div>
@@ -568,7 +683,7 @@
     <div class="section-head">
       <h2>Monthly executions</h2>
       <div class="head-actions">
-        <span class="panel-note">Runs and success rate per month</span>
+        <span class="panel-note">Executions and success rate per month</span>
         <button class="nav-btn" id="monthToggle" type="button" aria-expanded="true" aria-controls="monthPanel">▾ Minimize</button>
       </div>
     </div>
@@ -576,10 +691,15 @@
       <div class="trend-scroll" id="monthTableWrap"></div>
     </section>
 
-    <div class="section-head"><h2>Pass rate by module</h2><span class="panel-note">Highest to lowest · hover a bar for counts</span></div>
+    </div>
+
+    <div class="view" data-view="reporting" hidden>
+    <div class="section-head"><h2>Pass rate by module</h2><span class="panel-note">Green &ge; 80% · amber 50–79% · red &lt; 50% · hover a bar for counts</span></div>
     <section class="panel">
       <div class="chart-box" id="barBox"><canvas id="barChart" role="img" aria-label="Pass rate by environment and module"></canvas></div>
     </section>
+
+    </div>
 
   <div class="modal-overlay" id="reportOverlay">
     <div class="modal">
@@ -592,18 +712,22 @@
     </div>
   </div>
 
+    <div class="view" data-view="reporting" hidden>
     <div class="section-head"><h2>Test case detail</h2><span class="panel-note tnum" id="tableCount"></span></div>
     <section class="panel" id="detailPanel">
       <div class="filters">
         <input type="search" id="searchBox" placeholder="Search test cases…" aria-label="Search test cases">
         <select id="envFilter" aria-label="Environment"><option value="">All environments</option></select>
         <select id="modFilter" aria-label="Module"><option value="">All modules</option></select>
-        <select id="resFilter" aria-label="Result"><option value="">All results</option><option>Passed</option><option>Failed</option><option>Other</option></select>
+        <select id="resFilter" aria-label="Result"><option value="">All results</option><option>Passed</option><option>Failed</option><option>Other</option><option value="Flaky">Flaky only</option></select>
         <button class="nav-btn ghost" id="clearFilters" type="button">Clear filters</button>
       </div>
       <div class="table-scroll" id="tableWrap"></div>
     </section>
+    </div>
   </main>
+  </div>
+  </div>
 
 <script>
 function hashStr(s){
@@ -688,8 +812,8 @@ function buildReports(){
 }
 
 function reportName(rep){
-  if(!rep.last) return `Run ${runNumber(rep)} · undated`;
-  return `Run ${runNumber(rep)} · ${fmtDay(rep.last)}`;
+  if(!rep.last) return `Execution ${runNumber(rep)} · undated`;
+  return `Execution ${runNumber(rep)} · ${fmtDay(rep.last)}`;
 }
 
 // runs of one month, oldest first: Run 1, Run 2, ...
@@ -700,7 +824,7 @@ function runNumber(rep){
   return monthRuns(rep.month).indexOf(rep) + 1;
 }
 function runShortLabel(rep){
-  return `Run ${runNumber(rep)} · ${rep.last ? rep.last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'undated'}`;
+  return `Execution ${runNumber(rep)} · ${rep.last ? rep.last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : 'undated'}`;
 }
 function monthRows(month){ return allRows.filter(r => r.Month === month); }
 
@@ -710,7 +834,7 @@ function renderReportSelect(){
   const list = buildReports();
   if(!list.length){
     mSel.innerHTML = '<option value="">No months</option>';
-    rSel.innerHTML = '<option value="">No runs</option>';
+    rSel.innerHTML = '<option value="">No executions</option>';
     mSel.disabled = rSel.disabled = true;
     selectedMonth = selMonth = null;
     return;
@@ -732,12 +856,10 @@ function renderReportSelect(){
   mSel.value = selMonth;
 
   const runs = monthRuns(selMonth);
-  const all = tally(monthRows(selMonth));
   const live = runs.length;
-  let html = `<option value="">Overall · ${live} run${live === 1 ? '' : 's'} · ${all.pct.toFixed(1)}%</option>`;
+  let html = `<option value="">All Executions (${live})</option>`;
   [...runs].reverse().forEach((rep, i) => {
-    const s = tally(rep.rows);
-    html += `<option value="${esc(rep.key)}">${esc(runShortLabel(rep))} · ${s.pct.toFixed(1)}%${i === 0 ? ' (Latest)' : ''}</option>`;
+    html += `<option value="${esc(rep.key)}">${esc(runShortLabel(rep))}${i === 0 ? ' (Latest)' : ''}</option>`;
   });
   rSel.innerHTML = html;
   rSel.value = selectedMonth || '';
@@ -776,16 +898,35 @@ function setSync(ok, text){
   document.getElementById('syncText').textContent = text;
 }
 
+// Every minute the page asks the server for a tiny "version" (row count + newest import time).
+// All rows are downloaded again only when that version changes, i.e. when new results were added.
+let lastResultsVersion = null;
+
+function fmtUpdated(ts){
+  const d = ts ? new Date(ts) : null;
+  if(!d || isNaN(d)) return '';
+  return d.toLocaleString('en-GB', { day:'2-digit', month:'short', year:'numeric' }) + ', ' +
+         d.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+}
+
 async function fetchLive(){
   try{
-    const res = await fetch('/api/results', { cache:'no-store' });
-    if(!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    if(!data.error && Array.isArray(data.rows)){
+    const vRes = await fetch('/api/results-version', { cache:'no-store' });
+    if(!vRes.ok) throw new Error('HTTP ' + vRes.status);
+    const ver = await vRes.json();
+    if(ver.error) throw new Error(ver.error);
+    if(ver.version !== lastResultsVersion){
+      const res = await fetch('/api/results', { cache:'no-store' });
+      if(!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if(data.error || !Array.isArray(data.rows)) throw new Error(data.error || 'Bad response');
       allRows = data.rows.map(r => ({ ...r, Month: assignMonth(r) }));
       refreshDashboard();
-      setSync(true, `Updated ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})} · ${data.source === 'supabase' ? 'Supabase' : 'Local DB'}`);
+      lastResultsVersion = ver.version;
     }
+    const when = fmtUpdated(ver.last_updated);
+    const src = ver.source === 'supabase' && ver.count > 0 ? 'Supabase' : 'Local database';
+    setSync(true, when ? `Last updated: ${when} · ${src}` : src);
   }catch(err){
     setSync(false, 'Offline · retrying');
     if(!allRows.length){
@@ -821,6 +962,8 @@ function esc(v){
 }
 function pctOf(n, total){ return total ? (n / total * 100).toFixed(1) + '%' : '—'; }
 function rateLevel(p){ return p >= 80 ? 'good' : p >= 50 ? 'warn' : 'bad'; }
+const TARGET_PCT = 80; // release quality target used by the charts
+function healthColor(p){ return cssVar(p >= TARGET_PCT ? '--pass' : p >= 50 ? '--other' : '--fail'); }
 function rateWord(p){ return p >= 80 ? 'Healthy' : p >= 50 ? 'Needs attention' : 'Critical'; }
 function toDate(v){
   if(!v) return null;
@@ -876,18 +1019,27 @@ function renderHero(){
   const mods = new Set(rows.map(r => `${r.Environment}|${r.Module}`));
   const current = reports.get(selectedMonth);
   document.getElementById('heroTitle').textContent = current ? reportName(current)
-    : selMonth ? `${monthLabel(selMonth)} · Overall` : 'No reports yet';
+    : selMonth ? `${monthLabel(selMonth)} · All Executions` : 'No reports yet';
   const parts = [];
   if(selMonth){
     const n = monthRuns(selMonth).length;
-    parts.push(current ? `Run ${runNumber(current)} of ${n} this month` : `${n} run${n === 1 ? '' : 's'}`);
+    parts.push(current ? `Execution ${runNumber(current)} of ${n} this month` : `${n} execution${n === 1 ? '' : 's'}`);
   }
   if(rows.length) parts.push(`${rows.length.toLocaleString()} test case${rows.length === 1 ? '' : 's'}`, `${mods.size} module${mods.size === 1 ? '' : 's'}`);
   document.getElementById('monthSubHeading').textContent = parts.length ? parts.join(' · ') : 'No execution reports found yet.';
-  document.getElementById('envChips').innerHTML = envs.map(e => {
+  const kpis = document.querySelector('.kpis');
+  kpis.querySelectorAll('.kpi-env').forEach(el => el.remove());
+  kpis.insertAdjacentHTML('beforeend', envs.map(e => {
     const s = tally(rows.filter(r => r.Environment === e));
-    return `<span class="chip">${esc(e)} <b>${s.pct.toFixed(0)}%</b></span>`;
-  }).join('');
+    return `<div class="kpi kpi-env">
+        <div class="kpi-top"><span class="kpi-icon i-env">◉</span><span class="kpi-label" title="${esc(e)}">${esc(e)}</span></div>
+        <div class="kpi-value ${s.total ? rateLevel(s.pct) : ''}">${s.total ? s.pct.toFixed(1) + '%' : '–'}</div>
+        ${s.total ? `<span class="rate-pill ${rateLevel(s.pct)}">${rateWord(s.pct)}</span>` : ''}
+        <div class="kpi-foot">${s.Passed.toLocaleString()} of ${s.total.toLocaleString()} passed</div>
+        <div class="spark" data-spark="env" data-env="${esc(e)}"></div>
+      </div>`;
+  }).join(''));
+  kpis.style.setProperty('--kpi-cols', 5 + envs.length);
 }
 
 function renderSummary(){
@@ -904,16 +1056,16 @@ function renderSummary(){
   const unique = new Set(rows.map(r => `${r.Environment}|${r.Module}|${r.TestCaseName}`)).size;
   document.getElementById('totalFoot').textContent = !s.total ? ' '
     : selectedMonth ? `across ${envCount} environment${envCount === 1 ? '' : 's'}`
-    : `${unique.toLocaleString()} unique · all runs of the month`;
-  document.getElementById('rateLabel').textContent = selectedMonth ? 'Run pass rate' : 'Overall pass rate';
+    : `${unique.toLocaleString()} unique test cases`;
+  document.getElementById('rateLabel').textContent = selectedMonth ? 'Execution pass rate' : 'Overall pass rate';
   // executions done in the selected month
   const runs = selMonth ? monthRuns(selMonth) : [];
   const live = runs;
   document.getElementById('runsNum').textContent = selMonth ? live.length.toLocaleString() : '–';
   const cur = reports.get(selectedMonth);
   document.getElementById('runsFoot').textContent = !selMonth ? ' '
-    : cur ? `${shortMonth(selMonth)} · viewing run ${runNumber(cur)} of ${live.length}`
-    : live.length ? `${shortMonth(selMonth)} · latest ${live[live.length - 1].last ? live[live.length - 1].last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : '—'}` : 'no runs';
+    : cur ? `${shortMonth(selMonth)} · viewing execution ${runNumber(cur)} of ${live.length}`
+    : live.length ? `${shortMonth(selMonth)} · latest ${live[live.length - 1].last ? live[live.length - 1].last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : '—'}` : 'no executions';
   document.getElementById('passFoot').textContent = s.total ? `${pctOf(s.Passed, s.total)} of total` : ' ';
   document.getElementById('failFoot').textContent = s.total ? `${pctOf(s.Failed, s.total)} of total` : ' ';
   document.getElementById('otherFoot').textContent = s.total ? `${pctOf(s.Other, s.total)} of total` : ' ';
@@ -963,6 +1115,7 @@ document.getElementById('envGrid').addEventListener('click', (e) => {
   document.getElementById('modFilter').value = tr.dataset.mod;
   document.getElementById('resFilter').value = '';
   renderTable();
+  setView('reporting');
   document.getElementById('detailPanel').scrollIntoView({behavior:'smooth', block:'start'});
 });
 
@@ -981,12 +1134,12 @@ function renderCharts(){
     type: 'bar',
     data: { labels: items.map(i => i.k), datasets: [{
       label: 'Pass rate', data: items.map(i => +i.pct.toFixed(1)),
-      backgroundColor: cssVar('--series-1'), hoverBackgroundColor: cssVar('--series-1'),
+      backgroundColor: items.map(i => healthColor(i.pct)), hoverBackgroundColor: items.map(i => healthColor(i.pct)),
       borderRadius: 4, borderSkipped: 'start', barThickness: 16
     }]},
     options: {
       indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
-      layout: { padding: { right: 52 } },
+      layout: { padding: { right: 52, top: 22 } },
       interaction: { mode: 'nearest', axis: 'y', intersect: false },
       scales: {
         x: { min: 0, max: 100, grid: { color: cssVar('--grid'), drawTicks: false }, border: { display: false },
@@ -1016,6 +1169,12 @@ function renderCharts(){
         ctx.font = `700 11.5px ${font}`;
         ctx.textBaseline = 'middle';
         chart.getDatasetMeta(0).data.forEach((bar, i) => ctx.fillText(items[i].pct.toFixed(1) + '%', bar.x + 8, bar.y));
+        // vertical target line
+        const x = chart.scales.x.getPixelForValue(TARGET_PCT), { top, bottom } = chart.chartArea;
+        ctx.strokeStyle = cssVar('--pass'); ctx.lineWidth = 1.5; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(x, top - 6); ctx.lineTo(x, bottom); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = cssVar('--pass'); ctx.font = `700 11px ${font}`; ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+        ctx.fillText(`Target ${TARGET_PCT}%`, x, top - 8);
         ctx.restore();
       }
     }]
@@ -1076,29 +1235,37 @@ function renderTrend(){
   if(!trendMonths.length){
     wrap.innerHTML = '<div class="empty">No executions yet.</div>';
   } else {
+    const prevPct = new Map(trendMonths.map((m, i) => [m.month, i ? trendMonths[i - 1].pct : null]));
     const body = [...trendMonths].reverse().map(m => {
       const chips = m.runs.map(rep => {
         const label = runShortLabel(rep);
         return `<button type="button" class="run-chip${rep.key === selectedMonth ? ' active' : ''}" data-key="${esc(rep.key)}" title="Open this report · ${rep.rows.length} test cases · ${tally(rep.rows).pct.toFixed(1)}% pass">${esc(label)}</button>`;
       }).join('');
-      const runsText = String(m.executions);
+      const open = expandedMonths.has(m.month);
+      const prev = prevPct.get(m.month);
+      const d = prev == null ? null : m.pct - prev;
+      const delta = d == null ? '<span class="delta flat">—</span>'
+        : Math.abs(d) < 0.05 ? '<span class="delta flat">0.0%</span>'
+        : `<span class="delta ${d > 0 ? 'up' : 'down'}" title="Change in success rate vs previous month">${d > 0 ? '▲' : '▼'} ${Math.abs(d).toFixed(1)}%</span>`;
       return `<tr data-month="${esc(m.month)}" class="${m.month === currentMonth ? 'current' : ''}">
         <td class="month-name">${esc(monthLabel(m.month))}${m.month === currentMonth ? '<small>Selected month</small>' : ''}</td>
-        <td class="num">${runsText}</td>
-        <td><div class="run-chips">${chips}</div></td>
+        <td><button type="button" class="chips-toggle" data-toggle="${esc(m.month)}" aria-expanded="${open}">${m.executions} execution${m.executions === 1 ? '' : 's'} ${open ? '▾' : '▸'}</button></td>
         <td class="num">${m.total.toLocaleString()}</td>
         <td class="num">${m.Passed.toLocaleString()}</td>
         <td class="num">${m.Failed.toLocaleString()}</td>
+        <td class="num">${m.Other.toLocaleString()}</td>
         <td><div class="meter-cell">${splitBar(m, 'sm')}<span class="val">${m.pct.toFixed(1)}%</span></div></td>
-      </tr>`;
+        <td class="num">${delta}</td>
+      </tr>${open ? `<tr class="chips-row"><td></td><td colspan="7"><div class="run-chips">${chips}</div></td></tr>` : ''}`;
     }).join('');
     wrap.innerHTML = `<table><thead><tr>
-      <th>Month</th><th class="num">Executions</th><th>Runs</th>
-      <th class="num">Test runs</th><th class="num">Passed</th><th class="num">Failed</th><th>Success rate</th>
+      <th>Month</th><th>Executions</th>
+      <th class="num">Test cases</th><th class="num">Passed</th><th class="num">Failed</th><th class="num">Error</th><th>Success rate</th><th class="num">vs prev. month</th>
     </tr></thead><tbody>${body}</tbody></table>`;
   }
 
   renderTrendChart();
+  renderAnalytics();
 }
 
 // Chart shows one bar per month; clicking a month with several executions
@@ -1106,7 +1273,7 @@ function renderTrend(){
 let trendDrillMonth = null;
 
 function runLabel(rep){
-  return `Run ${runNumber(rep)}`;
+  return `Execution ${runNumber(rep)}`;
 }
 
 function setTrendDrill(month){
@@ -1122,8 +1289,8 @@ function renderTrendChart(){
   document.getElementById('trendNote').textContent = drill ? 'Click a bar to open that report'
                                                            : 'Click a month to see its executions';
   document.getElementById('trendBack').hidden = !drill;
-  document.getElementById('legendOn').textContent = drill ? (selectedMonth ? 'Selected run' : 'Runs') : 'Selected month';
-  document.getElementById('legendOff').textContent = drill ? 'Other runs' : 'Other months';
+  document.getElementById('legendOn').textContent = drill ? (selectedMonth ? 'Selected execution' : 'Executions') : 'Selected month';
+  document.getElementById('legendOff').textContent = drill ? 'Other executions' : 'Other months';
   if(!trendMonths.length || !window.Chart) return;
 
   const currentMonth = selMonth;
@@ -1149,6 +1316,10 @@ function renderTrendChart(){
       type: 'line', label: 'Average', data: items.map(() => +avg.toFixed(1)),
       borderColor: muted, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHitRadius: 0,
       fill: false, order: 1
+    }, {
+      type: 'line', label: 'Target', data: items.map(() => TARGET_PCT),
+      borderColor: cssVar('--pass'), borderWidth: 1.5, pointRadius: 0, pointHitRadius: 0,
+      fill: false, order: 0
     }]},
     options: {
       responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
@@ -1179,8 +1350,8 @@ function renderTrendChart(){
             label: c => {
               const it = items[c.dataIndex];
               const lines = [`Success rate ${it.pct.toFixed(1)}%`];
-              if(!drill) lines.push(`${it.executions} run${it.executions === 1 ? '' : 's'}`);
-              lines.push(`${it.total} test runs · ${it.Passed} passed · ${it.Failed} failed · ${it.Other} other`);
+              if(!drill) lines.push(`${it.executions} execution${it.executions === 1 ? '' : 's'}`);
+              lines.push(`${it.total} test cases · ${it.Passed} passed · ${it.Failed} failed · ${it.Other} other`);
               lines.push(drill ? 'Click to open this report'
                                : `Click to see its ${it.m.runs.length === 1 ? 'execution' : it.m.runs.length + ' executions'}`);
               return lines;
@@ -1207,7 +1378,16 @@ function renderTrendChart(){
 
 document.getElementById('trendBack').addEventListener('click', () => setTrendDrill(null));
 
+var expandedMonths = new Set();   // months whose execution list is open in the monthly table
 document.getElementById('monthTableWrap').addEventListener('click', (e) => {
+  const tog = e.target.closest('.chips-toggle');
+  if(tog){
+    const m = tog.dataset.toggle;
+    if(expandedMonths.has(m)) expandedMonths.delete(m); else expandedMonths.add(m);
+    renderTrend();
+    return;
+  }
+  if(e.target.closest('tr.chips-row') && !e.target.closest('.run-chip')) return;
   const chip = e.target.closest('.run-chip');
   if(chip){ openReport_(chip.dataset.key); return; }
   const tr = e.target.closest('tr[data-month]');
@@ -1235,6 +1415,30 @@ document.getElementById('monthTableWrap').addEventListener('click', (e) => {
   });
 })();
 
+// ---------- left side menu: switch between dashboard views ----------
+const VIEWS = ['overview', 'reporting', 'analytics'];
+function setView(name){
+  if(!VIEWS.includes(name)) name = 'overview';
+  document.querySelectorAll('.view').forEach(v => { v.hidden = v.dataset.view !== name; });
+  document.querySelectorAll('.nav-item').forEach(b => {
+    const on = b.dataset.view === name;
+    b.classList.toggle('active', on);
+    if(on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  try{ localStorage.setItem('dashboardView', name); }catch(e){}
+  // charts drawn while their view was hidden need a resize once shown
+  requestAnimationFrame(() => {
+    if(typeof barChart !== 'undefined' && barChart) barChart.resize();
+    if(typeof envTrendChart !== 'undefined' && envTrendChart) envTrendChart.resize();
+    if(typeof trendChart !== 'undefined' && trendChart) trendChart.resize();
+  });
+}
+document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', () => {
+  setView(b.dataset.view);
+  window.scrollTo({top: 0});
+}));
+(function(){ let v = 'overview'; try{ v = localStorage.getItem('dashboardView') || v; }catch(e){} setView(v); })();
+
 function openReportForRow(row){
   const pdfPath = row.ReportPath || row.ReportFile || row.ReportUrl || row.PdfPath || row.Report;
   if(pdfPath){
@@ -1254,10 +1458,19 @@ function renderTable(){
   const res = document.getElementById('resFilter').value;
   const q = document.getElementById('searchBox').value.trim().toLowerCase();
   const order = { Failed: 0, Other: 1, Passed: 2 };
+  // every execution of each test case in the open month: run count, failures, and flaky (both passed and not passed)
+  const hist = new Map();
+  (selMonth ? monthRows(selMonth) : rows).forEach(r => {
+    const k = `${r.Environment}|${r.Module}|${r.TestCaseName}`;
+    if(!hist.has(k)) hist.set(k, { runs: 0, Passed: 0, Failed: 0, Other: 0 });
+    const h = hist.get(k); h.runs++; h[normResult(r.Result)]++;
+  });
+  const histOf = r => hist.get(`${r.Environment}|${r.Module}|${r.TestCaseName}`) || { runs: 1, Passed: 0, Failed: 0, Other: 0 };
+  const isFlaky = h => h.Passed > 0 && (h.Failed + h.Other) > 0;
   tableList = rows.filter(r =>
     (!env || r.Environment === env) &&
     (!mod || r.Module === mod) &&
-    (!res || normResult(r.Result) === res) &&
+    (!res || (res === 'Flaky' ? isFlaky(histOf(r)) : normResult(r.Result) === res)) &&
     (!q || String(r.TestCaseName || '').toLowerCase().includes(q))
   ).sort((a, b) => order[normResult(a.Result)] - order[normResult(b.Result)]
     || String(a.Environment).localeCompare(String(b.Environment))
@@ -1269,11 +1482,12 @@ function renderTable(){
     wrap.innerHTML = `<div class="empty">${rows.length ? 'No test cases match these filters.' : 'No test cases in this report.'}</div>`;
     return;
   }
-  const head = `<tr><th>Environment / Module</th><th>Test case</th><th>Result</th><th>Executed</th><th class="num">Duration</th>${SHOW_REPORT_LINKS ? '<th>Report</th>' : ''}</tr>`;
+  const head = `<tr><th>Environment / Module</th><th>Test case</th><th>Result</th><th title="All executions of this test case in the selected month">Runs this month</th><th>Executed</th><th class="num">Duration</th>${SHOW_REPORT_LINKS ? '<th>Report</th>' : ''}</tr>`;
   const body = tableList.map((r, i) => `<tr>
     <td class="where"><div class="env-name">${esc(r.Environment)}</div><span class="tag">${esc(r.Module)}</span></td>
-    <td class="tc-name">${esc(r.TestCaseName)}</td>
+    <td class="tc-name">${esc(r.TestCaseName)}${isFlaky(histOf(r)) ? '<span class="tag-flaky" title="Passed in some executions and failed in others this month">Flaky</span>' : ''}</td>
     <td>${badge(r.Result)}</td>
+    <td class="runs-cell">${(h => `${h.runs} run${h.runs === 1 ? '' : 's'}${h.runs > 1 && h.Failed + h.Other ? ` · <b>${h.Failed + h.Other} failed</b>` : ''}`)(histOf(r))}</td>
     <td class="cell-muted">${fmtDate(r.StartTime)}</td>
     <td class="cell-muted num">${fmtDuration(r.StartTime, r.EndTime)}</td>
     ${SHOW_REPORT_LINKS ? `<td><a href="#" class="report-link" data-idx="${i}">View report</a></td>` : ''}
@@ -1299,9 +1513,122 @@ document.getElementById('tableWrap').addEventListener('click', (e) => {
   meter.addEventListener('mouseleave', () => { delete meter.dataset.focus; });
 })();
 
+// ---------- Trends & Analytics: environment pass-rate lines + top failing test cases ----------
+var envTrendChart;   // var: may be used by renders that run before this line
+var topFailMonths = 6;
+
+function renderAnalytics(){
+  const months = monthStats().slice(-12);
+  const font = "'Poppins', 'Segoe UI', system-ui, sans-serif";
+  const muted = cssVar('--muted'), ink = cssVar('--text');
+  if(envTrendChart){ envTrendChart.destroy(); envTrendChart = null; }
+  const envs = [...new Set(months.flatMap(m => m.rows.map(r => r.Environment)))].filter(Boolean).sort();
+  if(months.length && envs.length && window.Chart){
+    const datasets = envs.map((env, i) => {
+      const c = cssVar(`--env-${i % 5 + 1}`);
+      return { label: env, borderColor: c, backgroundColor: c, borderWidth: 2.5, pointRadius: 3.5, pointHoverRadius: 5, cubicInterpolationMode: 'monotone', spanGaps: true,
+        data: months.map(m => { const t = tally(m.rows.filter(r => r.Environment === env)); return t.total ? +t.pct.toFixed(1) : null; }),
+        counts: months.map(m => tally(m.rows.filter(r => r.Environment === env))) };
+    });
+    datasets.push({ label: `Target ${TARGET_PCT}%`, data: months.map(() => TARGET_PCT), borderColor: cssVar('--pass'),
+      borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, pointHitRadius: 0, fill: false, isTarget: true });
+    envTrendChart = new Chart(document.getElementById('envTrendChart'), {
+      type: 'line',
+      data: { labels: months.map(m => shortMonth(m.month)), datasets },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          y: { min: 0, max: 100, grid: { color: cssVar('--grid'), drawTicks: false }, border: { display: false },
+               ticks: { color: muted, padding: 6, stepSize: 25, callback: v => v + '%', font: { family: font, size: 11 } } },
+          x: { grid: { display: false }, border: { color: cssVar('--axis') },
+               ticks: { color: cssVar('--text2'), font: { family: font, size: 11.5, weight: '600' } } }
+        },
+        plugins: {
+          legend: { position: 'top', align: 'start', labels: { color: cssVar('--text2'), boxWidth: 14, boxHeight: 3, font: { family: font, size: 12, weight: '600' } } },
+          tooltip: {
+            backgroundColor: cssVar('--panel'), titleColor: ink, bodyColor: cssVar('--text2'),
+            borderColor: cssVar('--line'), borderWidth: 1, padding: 10, cornerRadius: 8,
+            titleFont: { family: font, weight: '700' }, bodyFont: { family: font },
+            filter: c => !c.dataset.isTarget && c.raw != null,
+            callbacks: { label: c => { const t = c.dataset.counts[c.dataIndex]; return ` ${c.dataset.label}: ${c.raw}% (${t.Passed}/${t.total} passed)`; } }
+          }
+        }
+      }
+    });
+  }
+
+  // top failing test cases over the chosen period, ending at the latest month
+  const wrap = document.getElementById('topFailWrap');
+  const period = monthStats().slice(-topFailMonths);
+  const map = new Map();
+  period.forEach(m => m.rows.forEach(r => {
+    const k = `${r.Environment}|${r.Module}|${r.TestCaseName}`;
+    if(!map.has(k)) map.set(k, { env: r.Environment, mod: r.Module, tc: r.TestCaseName, runs: 0, fails: 0, last: null });
+    const x = map.get(k); x.runs++;
+    if(normResult(r.Result) !== 'Passed'){
+      x.fails++;
+      const d = toDate(r.StartTime); if(d && (!x.last || d > x.last)) x.last = d;
+    }
+  }));
+  const top = [...map.values()].filter(x => x.fails).sort((a, b) => b.fails - a.fails || b.fails / b.runs - a.fails / a.runs).slice(0, 10);
+  const from = period.length ? shortMonth(period[0].month) : '', to = period.length ? shortMonth(period[period.length - 1].month) : '';
+  wrap.innerHTML = !top.length ? '<div class="empty">No failures in this period.</div>' :
+    `<table class="mini top-fail"><thead><tr><th>Test case</th><th class="num">Failed</th><th class="num">Runs</th><th>Fail rate</th><th>Last failed</th></tr></thead><tbody>` +
+    top.map(x => { const fr = x.fails / x.runs * 100; return `<tr>
+      <td><div class="tc-name" style="min-width:0">${esc(x.tc)}</div><div class="panel-note">${esc(x.env)} · ${esc(x.mod)}</div></td>
+      <td class="num"><b>${x.fails}</b></td><td class="num">${x.runs}</td>
+      <td><div class="fail-rate"><span class="bar"><i style="width:${fr.toFixed(1)}%"></i></span><span class="tnum">${fr.toFixed(0)}%</span></div></td>
+      <td class="cell-muted" style="white-space:nowrap">${x.last ? x.last.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
+    </tr>`; }).join('') + `</tbody></table><div class="panel-note" style="margin-top:10px">${from} – ${to} · failed includes errors</div>`;
+}
+
+document.getElementById('topFailRange').addEventListener('click', (e) => {
+  const b = e.target.closest('button[data-m]');
+  if(!b) return;
+  topFailMonths = Number(b.dataset.m);
+  document.querySelectorAll('#topFailRange button').forEach(x => x.classList.toggle('on', x === b));
+  renderAnalytics();
+});
+
+// mini bar charts at the bottom of the summary cards: one bar per month
+function renderSparks(){
+  // the latest 12 months; if the open month is older than that, the 12 months ending at it
+  const all = monthStats();
+  let end = all.length;
+  const sel = all.findIndex(m => m.month === selMonth);
+  if(sel !== -1 && sel < end - 12) end = sel + 1;
+  const months = all.slice(Math.max(0, end - 12), end);
+  const color = { total: '--series-1', Passed: '--pass', Failed: '--fail', Other: '--other', executions: '--series-1', env: '--series-1' };
+  document.querySelectorAll('.spark').forEach(el => {
+    const key = el.dataset.spark;
+    if(!months.length){ el.innerHTML = ''; return; }
+    const vals = months.map(m => {
+      if(key === 'executions') return m.runs.length;
+      if(key === 'env') return tally(m.rows.filter(r => r.Environment === el.dataset.env)).pct;
+      return m[key];
+    });
+    const max = key === 'env' ? 100 : Math.max(1, ...vals);
+    const n = vals.length, w = 120, h = 40, gap = 3, bw = (w - gap * (n - 1)) / n;
+    const fill = `var(${color[key]})`; // CSS variable, so it follows light/dark theme
+    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">` + vals.map((v, i) => {
+      const bh = Math.max(2, v / max * h);
+      const t = `${monthLabel(months[i].month)}: ${key === 'env' ? v.toFixed(1) + '%' : v.toLocaleString()} · click to open this month`;
+      return `<rect class="${months[i].month === selMonth ? 'on' : ''}" data-month="${esc(months[i].month)}" x="${(i * (bw + gap)).toFixed(2)}" y="${(h - bh).toFixed(2)}" width="${bw.toFixed(2)}" height="${bh.toFixed(2)}" rx="1.5" fill="${fill}"><title>${t}</title></rect>`;
+    }).join('') + '</svg>';
+  });
+}
+
+// clicking a sparkline bar opens that month, the same as clicking it on the Monthly trend chart
+document.querySelector('.kpis').addEventListener('click', (e) => {
+  const bar = e.target.closest('.spark rect[data-month]');
+  if(bar && bar.dataset.month !== selMonth) openMonth_(bar.dataset.month);
+});
+
 function renderAll(){
   renderHero();
   renderSummary();
+  renderSparks();
   renderTrend();
   renderCharts();
   renderEnvPanels();
@@ -1598,6 +1925,7 @@ document.getElementById('logoutBtn').addEventListener('click', async () => {
   selectedMonth = null;
   selMonth = null;
   userPickedReport = false;
+  lastResultsVersion = null;
   dashboardContent.style.display = 'none';
   loginScreen.style.display = 'flex';
 });
