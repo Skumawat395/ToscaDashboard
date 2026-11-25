@@ -16,9 +16,10 @@
     --bg:#f3f5f9; --panel:#ffffff; --panel2:#f6f8fb;
     --line:#e3e7ef; --grid:#e8ebf1; --axis:#c3c9d5;
     --text:#0f172a; --text2:#334155; --muted:#64748b;
-    --accent:#2a78d6; --series-1:#2a78d6; --series-1-dim:#a9c9ef; --accent-soft:rgba(42,120,214,.10);
-    --pass:#0ca30c; --fail:#d03b3b; --other:#e0a100;
-    --pass-soft:rgba(12,163,12,.10); --fail-soft:rgba(208,59,59,.10); --other-soft:rgba(250,178,25,.16);
+    --accent:#1689c5; --series-1:#1e9fd8; --series-1-dim:#bfe4f6; --accent-soft:rgba(30,159,216,.12);
+    --pass:#0ca30c; --fail:#d03b3b; --other:#f2a51a;
+    --pass-soft:rgba(12,163,12,.10); --fail-soft:rgba(208,59,59,.10); --other-soft:rgba(242,165,26,.16);
+    --pass-text:#0a8f0a; --warn-text:#e07800; --fail-text:#d03b3b; --seg-mute:#dde2ea;
     --shadow:0 1px 2px rgba(15,23,42,.04), 0 4px 16px rgba(15,23,42,.05);
     --shadow-hover:0 2px 4px rgba(15,23,42,.06), 0 12px 28px rgba(15,23,42,.09);
     --appbar:rgba(255,255,255,.86);
@@ -33,9 +34,10 @@
     --bg:#0d0f13; --panel:#171a20; --panel2:#1e222a;
     --line:#2a2f39; --grid:#252a33; --axis:#3a404c;
     --text:#f0efec; --text2:#c3c2b7; --muted:#8d94a3;
-    --accent:#3987e5; --series-1:#3987e5; --series-1-dim:#2b4466; --accent-soft:rgba(57,135,229,.16);
-    --pass:#0ca30c; --fail:#d03b3b; --other:#fab219;
-    --pass-soft:rgba(12,163,12,.18); --fail-soft:rgba(208,59,59,.20); --other-soft:rgba(250,178,25,.18);
+    --accent:#3aaee6; --series-1:#3aaee6; --series-1-dim:#24485c; --accent-soft:rgba(58,174,230,.16);
+    --pass:#7cc243; --fail:#e0574e; --other:#f5b53a;
+    --pass-soft:rgba(124,194,67,.18); --fail-soft:rgba(224,87,78,.20); --other-soft:rgba(245,181,58,.18);
+    --pass-text:#8fd156; --warn-text:#f5a03a; --fail-text:#f0726a; --seg-mute:#353b47;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
     --shadow-hover:0 2px 4px rgba(0,0,0,.35), 0 12px 28px rgba(0,0,0,.4);
     --appbar:rgba(23,26,32,.86);
@@ -46,9 +48,10 @@
     --bg:#0d0f13; --panel:#171a20; --panel2:#1e222a;
     --line:#2a2f39; --grid:#252a33; --axis:#3a404c;
     --text:#f0efec; --text2:#c3c2b7; --muted:#8d94a3;
-    --accent:#3987e5; --series-1:#3987e5; --series-1-dim:#2b4466; --accent-soft:rgba(57,135,229,.16);
-    --pass:#0ca30c; --fail:#d03b3b; --other:#fab219;
-    --pass-soft:rgba(12,163,12,.18); --fail-soft:rgba(208,59,59,.20); --other-soft:rgba(250,178,25,.18);
+    --accent:#3aaee6; --series-1:#3aaee6; --series-1-dim:#24485c; --accent-soft:rgba(58,174,230,.16);
+    --pass:#7cc243; --fail:#e0574e; --other:#f5b53a;
+    --pass-soft:rgba(124,194,67,.18); --fail-soft:rgba(224,87,78,.20); --other-soft:rgba(245,181,58,.18);
+    --pass-text:#8fd156; --warn-text:#f5a03a; --fail-text:#f0726a; --seg-mute:#353b47;
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 4px 16px rgba(0,0,0,.25);
     --shadow-hover:0 2px 4px rgba(0,0,0,.35), 0 12px 28px rgba(0,0,0,.4);
     --appbar:rgba(23,26,32,.86);
@@ -88,10 +91,10 @@
     position:relative; overflow:hidden; letter-spacing:-.5px;
   }
   /* TF logo: drop the image at dashboard/web/tf-logo.png; the "TF" text shows until it exists */
-  .brand-mark img, .login-icon img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:var(--panel); padding:3px;}
-  .brand-mark:has(img){box-shadow:none; border:1px solid var(--line);}
+  .brand-mark img, .login-icon img{position:absolute; inset:0; width:100%; height:100%; object-fit:contain; background:transparent; padding:3px;}
+  .brand-mark:has(img){box-shadow:none; border:0; background:transparent;}
   .login-icon{position:relative; overflow:hidden;}
-  .login-icon:has(img){box-shadow:0 8px 24px rgba(20,30,60,.12); border:1px solid var(--line);}
+  .login-icon:has(img){box-shadow:none; border:0; background:transparent;}
   .login-icon img{padding:7px;}
   .brand-name{font-size:24px; font-weight:700; letter-spacing:-.3px; line-height:1.15;}
   .brand-sub{font-size:12.5px; color:var(--muted);}
@@ -106,7 +109,9 @@
 
   /* ---- layout ---- */
   .wrap{max-width:none; margin:0; padding:24px 24px 64px;}
-  .hero{display:flex; align-items:flex-end; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:22px;}
+  .hero{display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap; margin-bottom:22px;}
+  .hero > .kpi-hero{flex:0 1 780px; min-width:min(100%, 340px);}
+  body:not([data-view="overview"]) .hero > .kpi-hero{display:none;}
   .hero .sub{margin-top:6px;}
   .chips{display:flex; gap:8px; flex-wrap:wrap;}
   .chip{
@@ -121,15 +126,12 @@
   .stack > * + *{margin-top:20px;}
 
   /* ---- KPI tiles ---- */
-  .kpis{display:grid; grid-template-columns:1.7fr repeat(var(--kpi-cols, 5), minmax(0, 1fr)); gap:14px;}
+  .kpis{display:grid; grid-template-columns:repeat(var(--kpi-cols, 5), minmax(0, 1fr)); gap:14px;}
   .i-env{background:var(--accent-soft); color:var(--accent);}
   .kpi-env .rate-pill{align-self:flex-start; font-size:11px; padding:2px 9px;}
-  .spark{margin-top:auto; padding-top:8px; height:40px; box-sizing:content-box;}
-  .spark svg{display:block; width:100%; height:40px; overflow:visible;}
-  .spark rect{opacity:.28; cursor:pointer; transition:opacity .12s ease;} .spark rect.on{opacity:1;} .spark rect:hover{opacity:.75;} .spark rect.on:hover{opacity:1;}
-  .kpi-env .kpi-value.good{color:var(--pass);} .kpi-env .kpi-value.warn{color:var(--other);} .kpi-env .kpi-value.bad{color:var(--fail);}
+  .kpi-env .kpi-value.good{color:var(--pass-text);} .kpi-env .kpi-value.warn{color:var(--warn-text);} .kpi-env .kpi-value.bad{color:var(--fail-text);}
   .i-runs{background:var(--accent-soft); color:var(--accent);}
-  @media(max-width:1400px){ .kpis{grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));} .kpi-hero{grid-column:1 / -1;} }
+  @media(max-width:1400px){ .kpis{grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));} }
   @media(max-width:760px){ .kpis{grid-template-columns:repeat(2, minmax(0, 1fr));} }
   @media(max-width:340px){ .kpis{grid-template-columns:minmax(0, 1fr);} }
   @media(max-width:640px){ .kpis{gap:10px;} .kpi{padding:14px;} .kpi-value{font-size:26px;} .kpis > .kpi:last-child:nth-child(even){grid-column:1 / -1;} }
@@ -172,7 +174,12 @@
   .split{display:flex; gap:2px; height:10px; border-radius:99px; overflow:hidden; background:var(--panel); width:100%;}
   .split.lg{height:14px;}
   .split.sm{height:8px; min-width:90px;}
-  .split .seg{display:block; min-width:3px; height:100%;}
+  .split .seg{display:block; min-width:3px; height:100%; transition:background .15s ease;}
+  /* by default Passed is full colour and Failed/Other are faded; hovering a segment brings it to full colour and fades the rest */
+  .split .seg{transition:opacity .15s ease;}
+  .split .seg-failed, .split .seg-other{opacity:.45;}
+  .split:has(.seg:hover) .seg-passed{opacity:.45;}
+  .split .seg:hover{opacity:1 !important;}
 
   /* overall pass-rate meter: hover a segment or a key item to light that kind, the rest fade */
   .meter{display:flex; flex-direction:column; gap:12px;}
@@ -191,9 +198,11 @@
   .meter-key i{width:9px; height:9px; border-radius:3px; display:inline-block;}
   .meter .seg, .meter-key span{transition:opacity .18s ease, filter .18s ease, background .18s ease;}
   .meter .seg, .meter-key span{cursor:default;}
+  .meter:not([data-focus]) .seg:not([data-k="Passed"]),
   .meter[data-focus="Passed"] .seg:not([data-k="Passed"]),
   .meter[data-focus="Failed"] .seg:not([data-k="Failed"]),
-  .meter[data-focus="Other"] .seg:not([data-k="Other"]){opacity:.22;}
+  .meter[data-focus="Other"] .seg:not([data-k="Other"]){opacity:.45;}
+  .meter:not([data-focus]) .meter-key span:not([data-k="Passed"]),
   .meter[data-focus="Passed"] .meter-key span:not([data-k="Passed"]),
   .meter[data-focus="Failed"] .meter-key span:not([data-k="Failed"]),
   .meter[data-focus="Other"] .meter-key span:not([data-k="Other"]){opacity:.4;}
@@ -213,7 +222,6 @@
   .overview .trend-panel{flex:1;}
   .trend-box{flex:1; min-height:260px;}
   .head-actions{display:flex; align-items:center; gap:12px; flex-wrap:wrap; justify-content:flex-end;}
-  #monthPanel.collapsed{display:none;}
   .head-actions [hidden]{display:none !important;}
   #trendTitle{white-space:nowrap;}
   #trendBack{padding:4px 10px; font-size:12px;}
@@ -222,7 +230,7 @@
   /* ---- monthly trend ---- */
   .trend-panel{display:flex; flex-direction:column; gap:18px;}
   .trend-scroll{overflow-x:auto;}
-  :root{ --env-1:#2a78d6; --env-2:#1baf7a; --env-3:#8a5cd6; --env-4:#e07b1a; --env-5:#d6457a; }
+  :root{ --env-1:#1e9fd8; --env-2:#7c5cdb; --env-3:#2bb3a3; --env-4:#6b7a99; --env-5:#d6457a; }
   .tag-flaky{display:inline-block; margin-left:8px; padding:1px 7px; border-radius:6px; font-size:10.5px; font-weight:700;
     letter-spacing:.3px; text-transform:uppercase; background:var(--other-soft); color:var(--text); border:1px solid var(--other); vertical-align:1px;}
   .runs-cell{white-space:nowrap; font-size:12.5px; color:var(--text2);}
@@ -234,9 +242,11 @@
   .trend-scroll tr.chips-row .run-chips{max-width:none; padding:10px 0 4px;}
   .delta{font-weight:700; font-size:12.5px; white-space:nowrap;}
   .delta.up{color:var(--pass);} .delta.down{color:var(--fail);} .delta.flat{color:var(--muted);}
-  .analytics-grid{display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:20px; align-items:start;}
+  .analytics-grid{display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1fr); gap:20px; align-items:stretch;}
   @media(max-width:1180px){ .analytics-grid{grid-template-columns:minmax(0, 1fr);} }
-  .env-trend-box{height:340px;}
+  .analytics-panel{display:flex; flex-direction:column; min-width:0;}
+  .analytics-panel h3{font-size:15px;}
+  .env-trend-box{height:350px; margin-top:auto; margin-bottom:auto;}
   .range-pick{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden;}
   .range-pick button{background:var(--panel); border:0; padding:5px 11px; font:inherit; font-size:12px; font-weight:700; color:var(--muted); cursor:pointer;}
   .range-pick button + button{border-left:1px solid var(--line);}
@@ -264,7 +274,7 @@
   .trend-legend span{display:inline-flex; align-items:center; gap:6px;}
   .trend-legend i{width:10px; height:10px; border-radius:3px; display:inline-block;}
   .trend-legend i.dash{width:16px; height:0; border-radius:0; border-top:2px dashed var(--muted);}
-  .trend-legend i.target{width:16px; height:0; border-radius:0; border-top:2px solid var(--pass);}
+  .trend-legend i.target{width:16px; height:0; border-radius:0; border-top:2px dotted var(--pass);}
 
   /* ---- environment cards ---- */
   .env-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(440px, 1fr)); gap:16px;}
@@ -438,38 +448,50 @@
   #dashboardContent{display:none;}
 
   /* ---- left side menu ---- */
-  :root{ --nav-bg:#0f2747; --nav-text:#c9d5e6; --nav-hover:rgba(255,255,255,.08); --nav-line:rgba(255,255,255,.10); }
-  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --nav-bg:#11151c; --nav-text:#aab3c2; --nav-hover:rgba(255,255,255,.06); --nav-line:#2a2f39; } }
-  :root[data-theme="dark"]{ --nav-bg:#11151c; --nav-text:#aab3c2; --nav-hover:rgba(255,255,255,.06); --nav-line:#2a2f39; }
+  :root{ --nav-bg:var(--bg); --nav-text:#334155; --nav-hover:#e6edf5; --nav-line:#e3e7ef; }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --nav-bg:var(--bg); --nav-text:#c3c2b7; --nav-hover:#1e222a; --nav-line:#2a2f39; } }
+  :root[data-theme="dark"]{ --nav-bg:var(--bg); --nav-text:#c3c2b7; --nav-hover:#1e222a; --nav-line:#2a2f39; }
   .shell{display:flex; min-height:100vh;}
   .shell-main{flex:1 1 auto; min-width:0;}
   .sidenav{
     flex:0 0 232px; width:232px; position:sticky; top:0; height:100vh; overflow-y:auto;
     background:var(--nav-bg); border-right:1px solid var(--nav-line);
-    display:flex; flex-direction:column; padding:18px 12px; gap:4px;
+    display:flex; flex-direction:column; padding:16px 12px; gap:4px; transition:width .2s ease, flex-basis .2s ease;
   }
-  .sidenav-label{font-size:10.5px; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:var(--nav-text); opacity:.6; padding:6px 12px 8px;}
+  .sidenav-top{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:4px 4px 18px; margin-bottom:6px; border-bottom:1px solid var(--nav-line);}
+  .sidenav-logo{width:72px; height:72px; object-fit:contain; display:block;}
+  .sidenav-logo-text{font-family:var(--font-head); font-weight:800; font-size:28px; color:var(--accent);}
+  .nav-collapse{
+    width:32px; height:32px; flex:0 0 auto; border-radius:8px; border:1px solid var(--nav-line); background:var(--panel);
+    color:var(--muted); cursor:pointer; display:inline-flex; align-items:center; justify-content:center;
+  }
+  .nav-collapse:hover{color:var(--accent); border-color:var(--accent);}
+  .nav-collapse svg{width:16px; height:16px; transition:transform .2s ease;}
   .nav-item{
     display:flex; align-items:center; gap:12px; width:100%; text-align:left;
     padding:11px 12px; border:0; border-radius:10px; background:transparent; cursor:pointer;
-    color:var(--nav-text); font:inherit; font-size:14px; font-weight:600;
+    color:var(--nav-text); font:inherit; font-size:14px; font-weight:600; white-space:nowrap;
     transition:background .15s ease, color .15s ease;
   }
   .nav-item svg{width:20px; height:20px; flex:0 0 auto;}
-  .nav-item:hover{background:var(--nav-hover); color:#fff;}
-  .nav-item.active{background:var(--accent); color:#fff; box-shadow:0 6px 16px rgba(42,120,214,.35);}
-  .nav-item:focus-visible{outline:2px solid #fff; outline-offset:2px;}
+  .nav-item:hover{background:var(--nav-hover); color:var(--text);}
+  .nav-item.active{background:var(--accent); color:#fff; box-shadow:0 6px 16px rgba(30,159,216,.30);}
+  .nav-item:focus-visible, .nav-collapse:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+  /* collapsed: icons only, logo shrinks, arrow flips to "expand" */
+  .shell.nav-collapsed .sidenav{flex-basis:76px; width:76px; padding:16px 10px;}
+  .shell.nav-collapsed .sidenav-top{flex-direction:column; padding:0 0 14px; gap:12px;}
+  .shell.nav-collapsed .sidenav-logo{width:44px; height:44px;}
+  .shell.nav-collapsed .sidenav-logo-text{font-size:18px;}
+  .shell.nav-collapsed .nav-item span{display:none;}
+  .shell.nav-collapsed .nav-item{justify-content:center; padding:12px 0;}
+  .shell.nav-collapsed .nav-collapse svg{transform:rotate(180deg);}
   .view[hidden]{display:none !important;}
-  @media(max-width:1024px){
-    .sidenav{flex-basis:72px; width:72px; padding:18px 10px;}
-    .sidenav-label, .nav-item span{display:none;}
-    .nav-item{justify-content:center; padding:12px 0;}
-  }
   @media(max-width:640px){
     .shell{flex-direction:column; min-height:0;}
-    .sidenav{position:static; height:auto; width:auto; flex-basis:auto; flex-direction:row; padding:8px 12px; gap:6px; border-right:0; border-bottom:1px solid var(--nav-line); overflow-x:auto;}
-    .nav-item{flex:1 1 0; justify-content:center; padding:10px 8px; font-size:12.5px; gap:6px;}
-    .nav-item span{display:inline; white-space:nowrap;}
+    .sidenav, .shell.nav-collapsed .sidenav{position:static; height:auto; width:auto; flex-basis:auto; flex-direction:row; padding:8px 12px; gap:6px; border-right:0; border-bottom:1px solid var(--nav-line); overflow-x:auto;}
+    .sidenav-top{display:none;}
+    .nav-item, .shell.nav-collapsed .nav-item{flex:1 1 0; justify-content:center; padding:10px 8px; font-size:12.5px; gap:6px;}
+    .nav-item span, .shell.nav-collapsed .nav-item span{display:inline; white-space:nowrap;}
     .nav-item svg{width:16px; height:16px;}
   }
 
@@ -501,6 +523,168 @@
     .section-head{flex-wrap:wrap;}
     .kpi-hero .kpi-value{font-size:36px;}
   }
+
+  /* =================== visual polish: logo palette, softer surfaces =================== */
+  :root{ --logo-blue:#1e9fd8; --logo-amber:#f6b127; --logo-green:#8dc63f;
+         --brand-grad:linear-gradient(90deg, var(--logo-blue) 0%, var(--logo-blue) 40%, var(--logo-amber) 70%, var(--logo-green) 100%); }
+  body{background:radial-gradient(1100px 420px at 85% -8%, rgba(30,159,216,.07), transparent 60%),
+                  radial-gradient(900px 380px at 10% 110%, rgba(141,198,63,.06), transparent 60%), var(--bg);
+       background-attachment:fixed;}
+
+  /* header: thin logo-coloured line under the bar */
+  .appbar{border-bottom:0;}
+  .appbar::after{content:''; display:block; height:3px; background:var(--brand-grad); opacity:.85;}
+  .brand-name{letter-spacing:-.4px;}
+  .brand-sub{color:var(--accent); font-weight:600; letter-spacing:.2px;}
+
+  /* section titles: short logo-gradient marker */
+  .section-head h2, .analytics-panel h3{display:inline-flex; align-items:center; gap:10px;}
+  .section-head h2::before{content:''; width:4px; height:20px; border-radius:2px;
+    background:linear-gradient(180deg, var(--logo-blue), var(--logo-amber) 60%, var(--logo-green));}
+
+  /* cards and panels: lighter border, softer shadow, gentle lift on hover */
+  .kpi, .panel{border-color:color-mix(in srgb, var(--line) 70%, transparent); border-radius:14px;}
+  .kpi{position:relative; overflow:hidden; transition:transform .18s ease, box-shadow .18s ease;}
+  .kpis .kpi:hover{transform:translateY(-2px); box-shadow:var(--shadow-hover);}
+  /* coloured top edge per card type */
+  .kpis .kpi::before{content:''; position:absolute; left:0; right:0; top:0; height:3px; background:var(--kpi-accent, var(--logo-blue));}
+  .kpi:has(.i-pass){--kpi-accent:var(--pass);}
+  .kpi:has(.i-fail){--kpi-accent:var(--fail);}
+  .kpi:has(.i-other){--kpi-accent:var(--other);}
+  .kpi-env:has(.kpi-value.good){--kpi-accent:var(--pass);}
+  .kpi-env:has(.kpi-value.warn){--kpi-accent:var(--other);}
+  .kpi-env:has(.kpi-value.bad){--kpi-accent:var(--fail);}
+  .kpi-icon{border-radius:9px;}
+  .i-env, .i-total, .i-runs{background:rgba(30,159,216,.12); color:var(--logo-blue);}
+  .kpi-label{text-transform:uppercase; letter-spacing:.5px; font-size:11px; font-weight:700;}
+  .kpi-value{letter-spacing:-.8px;}
+
+  /* overall pass rate: one elegant horizontal strip */
+  .kpi-hero{flex-direction:row; align-items:center; gap:28px; padding:18px 24px;
+    background:linear-gradient(120deg, var(--panel) 0%, var(--panel) 55%, color-mix(in srgb, var(--logo-blue) 6%, var(--panel)) 100%);}
+  .kpi-hero::after{content:''; position:absolute; left:0; top:0; bottom:0; width:4px; background:linear-gradient(180deg, var(--logo-blue), var(--logo-green));}
+  .hero-rate{flex:0 0 auto; display:flex; flex-direction:column; gap:4px;}
+  .hero-rate .meter-title{font-size:12px; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); font-family:var(--font-body); font-weight:700;}
+  .kpi-hero .rate-row{display:flex; align-items:center; gap:12px; flex-wrap:nowrap;}
+  .kpi-hero .kpi-value{font-size:40px; letter-spacing:-1.4px;}
+  .kpi-hero .meter{flex:1 1 auto; min-width:0; gap:10px;}
+  .kpi-hero .cbar{height:16px; gap:2px;}
+  .kpi-hero .cbar .seg{border-radius:8px;}
+  .kpi-hero .meter-key span{padding:3px 10px; font-size:11.5px;}
+  @media(max-width:760px){ .kpi-hero{flex-direction:column; align-items:stretch; gap:14px;} }
+
+  /* pills: a touch more refined */
+  .rate-pill{font-size:11.5px; letter-spacing:.2px; border:1px solid transparent;}
+  .rate-pill.good{border-color:color-mix(in srgb, var(--pass) 30%, transparent);}
+  .rate-pill.warn{border-color:color-mix(in srgb, var(--other) 35%, transparent);}
+  .rate-pill.bad{border-color:color-mix(in srgb, var(--fail) 30%, transparent);}
+
+  /* tables: tinted header, roomier rows */
+  th{background:var(--panel2); color:var(--muted);}
+  thead th:first-child{border-top-left-radius:8px;} thead th:last-child{border-top-right-radius:8px;}
+  tbody tr:hover td{background:color-mix(in srgb, var(--logo-blue) 5%, var(--panel));}
+
+  /* controls */
+  select, input[type=search]{border-radius:10px;}
+  .nav-btn{border-radius:10px;}
+  .range-pick{border-radius:10px; box-shadow:var(--shadow);}
+  .range-pick button.on{background:linear-gradient(135deg, var(--accent), var(--logo-blue));}
+
+  /* side menu: active item in logo blue gradient, subtle hover */
+  .nav-item.active{background:linear-gradient(135deg, var(--accent), var(--logo-blue)); box-shadow:0 6px 16px rgba(30,159,216,.28);}
+  .nav-item:not(.active):hover svg{color:var(--logo-blue);}
+
+  /* =================== round 2: navy brand menu, compact cards, heading =================== */
+  .hero-eyebrow{font-size:15px; color:var(--text); letter-spacing:1px; font-weight:800; margin-bottom:8px;}
+
+  :root, :root[data-theme="dark"]{ --nav-bg:#0b1b3d; --nav-text:#c5d1e6; --nav-hover:rgba(255,255,255,.08); --nav-line:rgba(255,255,255,.10); }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){ --nav-bg:#0b1b3d; --nav-text:#c5d1e6; --nav-hover:rgba(255,255,255,.08); --nav-line:rgba(255,255,255,.10); } }
+  .sidenav{background:radial-gradient(420px 260px at 0% 0%, rgba(30,159,216,.18), transparent 70%),
+                     linear-gradient(180deg, #0d2149 0%, #0a1834 100%);}
+  .sidenav-top{padding:6px 2px 18px;}
+  .sidenav-brand{display:flex; align-items:center; gap:10px; min-width:0;}
+  .sidenav-logo{width:48px; height:48px;}
+  .sidenav-name{display:flex; flex-direction:column; line-height:1.05; color:#fff; font-family:var(--font-head); white-space:nowrap;}
+  .sidenav-name b{font-size:19px; font-weight:800; letter-spacing:-.2px;}
+  .sidenav-name span{font-size:17px; font-weight:400; color:#e3eaf5;}
+  .sidenav-logo-text{color:#fff;}
+  .nav-item:hover{color:#fff;}
+  .nav-collapse{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.14); color:#c5d1e6;}
+  .nav-collapse:hover{color:#fff; border-color:var(--logo-blue); background:rgba(30,159,216,.18);}
+  .nav-item:focus-visible, .nav-collapse:focus-visible{outline-color:#fff;}
+  .nav-collapse{margin-top:auto; align-self:flex-end;}
+  .shell.nav-collapsed .nav-collapse{align-self:center;}
+  .shell.nav-collapsed .sidenav-name{display:none;}
+  .shell.nav-collapsed .sidenav-top{justify-content:center;}
+  .shell.nav-collapsed .sidenav-logo{width:42px; height:42px;}
+
+  /* summary cards: icon tile on the left, label / number / note on the right */
+  .kpis{grid-template-columns:repeat(auto-fit, minmax(168px, 1fr)) !important; gap:12px;}
+  .kpis .kpi{display:grid; grid-template-columns:auto minmax(0, 1fr); column-gap:14px; row-gap:2px;
+             align-items:center; align-content:center; padding:14px 16px; border-radius:12px;}
+  .kpis .kpi::before{display:none;}
+  .kpis .kpi > *{grid-column:2;}
+  .kpis .kpi .kpi-top{display:contents;}
+  .kpis .kpi .kpi-icon{grid-column:1; grid-row:1 / span 4; align-self:center; width:46px; height:46px; border-radius:12px;}
+  .kpis .kpi .kpi-icon svg{width:22px; height:22px;}
+  .kpis .kpi .kpi-label{grid-column:2; text-transform:none; letter-spacing:0; font-size:12.5px; font-weight:600; color:var(--text2);}
+  .kpis .kpi .kpi-value{font-size:26px; line-height:1.1;}
+  .kpis .kpi .kpi-foot{font-size:11.5px;}
+  .kpis .kpi .rate-pill{justify-self:start; margin:2px 0;}
+  .i-env, .i-total{background:rgba(30,159,216,.12); color:var(--logo-blue);}
+  .i-runs{background:rgba(124,92,219,.12); color:#7c5cdb;}
+  /* numbers in their meaning colour */
+  .kpi:has(.i-total) .kpi-value{color:var(--logo-blue);}
+  .kpi:has(.i-pass) .kpi-value{color:var(--pass-text);}
+  .kpi:has(.i-fail) .kpi-value{color:var(--fail-text);}
+  .kpi:has(.i-other) .kpi-value{color:var(--warn-text);}
+  .kpi:has(.i-runs) .kpi-value{color:#7c5cdb;}
+  .kpi-env:has(.kpi-value.good) .kpi-icon{background:var(--pass-soft); color:var(--pass);}
+  .kpi-env:has(.kpi-value.warn) .kpi-icon{background:var(--other-soft); color:var(--warn-text);}
+  .kpi-env:has(.kpi-value.bad) .kpi-icon{background:var(--fail-soft); color:var(--fail);}
+
+  /* =================== round 3: one card language on every page =================== */
+  /* shared status text colours */
+  .kpi-value.good, .env-rate .big.good, .meter-cell .val.good{color:var(--pass-text);}
+  .kpi-value.warn, .env-rate .big.warn, .meter-cell .val.warn{color:var(--warn-text);}
+  .kpi-value.bad,  .env-rate .big.bad,  .meter-cell .val.bad {color:var(--fail-text);}
+
+  /* every surface: white, 12px corners, same hairline border and shadow */
+  .panel, .kpi, .kpi-hero{border-radius:12px; border:1px solid color-mix(in srgb, var(--line) 75%, transparent); box-shadow:var(--shadow);}
+  .panel{padding:18px 20px;}
+
+  /* icon tiles: one size everywhere */
+  .kpi-icon{width:46px; height:46px; border-radius:12px; flex:0 0 auto;}
+  .kpi-icon svg{width:22px; height:22px;}
+
+  /* Overall pass rate: same style as the summary cards, just wider */
+  .kpi-hero{background:var(--panel); padding:16px 20px; gap:16px; align-items:center;}
+  .kpi-hero::after{display:none;}
+  .kpi-hero .hero-rate{gap:2px;}
+  .kpi-hero .hero-rate .meter-title{font-size:12.5px; font-weight:600; color:var(--text2); text-transform:none; letter-spacing:0;}
+  .kpi-hero .kpi-value{font-size:34px; letter-spacing:-1px;}
+  .kpi-hero .meter{padding-left:8px; border-left:1px solid var(--line); margin-left:4px;}
+  .kpi-hero .meter{padding-left:20px;}
+  .i-rate{background:rgba(30,159,216,.12); color:var(--logo-blue);}
+  .kpi-hero:has(.kpi-value.good) .i-rate{background:var(--pass-soft); color:var(--pass);}
+  .kpi-hero:has(.kpi-value.warn) .i-rate{background:var(--other-soft); color:var(--warn-text);}
+  .kpi-hero:has(.kpi-value.bad)  .i-rate{background:var(--fail-soft); color:var(--fail);}
+  @media(max-width:760px){ .kpi-hero .meter{border-left:0; padding-left:0; margin-left:0;} }
+
+  /* environment panels */
+  .env-title{display:flex; align-items:center; gap:12px; min-width:0;}
+  .env-card:has(.big.good) .i-env{background:var(--pass-soft); color:var(--pass);}
+  .env-card:has(.big.warn) .i-env{background:var(--other-soft); color:var(--warn-text);}
+  .env-card:has(.big.bad)  .i-env{background:var(--fail-soft); color:var(--fail);}
+  .env-rate .big{font-size:26px;}
+
+  /* panel headings inside panels match section headings */
+  .panel-head h3, .analytics-panel h3{font-size:15px; font-weight:700;}
+  .trend-legend{font-weight:500;}
+
+  /* filters bar on Execution Results */
+  .filters{gap:10px;}
+  .filters input[type=search], .filters select{height:40px;}
 </style>
 </head>
 <body>
@@ -529,7 +713,12 @@
   <div id="dashboardContent">
   <div class="shell">
   <nav class="sidenav" aria-label="Dashboard sections">
-    <div class="sidenav-label">Menu</div>
+    <div class="sidenav-top">
+      <div class="sidenav-brand">
+        <img class="sidenav-logo" src="/assets/tf-logo.png" alt="Thought Frameworks logo" onerror="this.outerHTML='<span class=&quot;sidenav-logo-text&quot;>TF</span>'">
+        <span class="sidenav-name"><b>Thought</b><span>Frameworks</span></span>
+      </div>
+    </div>
     <button class="nav-item active" type="button" data-view="overview" aria-current="page">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>
       <span>Overview</span>
@@ -542,12 +731,14 @@
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 20h18"/><path d="m4 15 5-5 4 4 7-7"/><path d="M15 7h5v5"/></svg>
       <span>Trends &amp; Analytics</span>
     </button>
+    <button class="nav-collapse" id="navCollapse" type="button" aria-label="Collapse menu" title="Collapse menu" aria-expanded="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m11 17-5-5 5-5"/><path d="m18 17-5-5 5-5"/></svg>
+    </button>
   </nav>
   <div class="shell-main">
   <header class="appbar">
     <div class="appbar-inner">
       <div class="brand">
-        <div class="brand-mark">TF<img src="/assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
         <div>
           <div class="brand-name">Tricentis Tosca SAP Release Quality Intelligence Dashboard</div>
           <div class="brand-sub">SAP release regression · Tosca automation</div>
@@ -573,22 +764,18 @@
   <main class="wrap">
     <section class="hero">
       <div>
-        <div class="eyebrow">Release quality summary</div>
+        <div class="eyebrow hero-eyebrow">Enterprise Quality Centre of Excellence</div>
         <h1 id="heroTitle">Loading…</h1>
-        <div class="sub" id="monthSubHeading">Loading the latest execution report…</div>
+        <div class="sub" id="monthSubHeading" hidden>Loading the latest execution report…</div>
       </div>
-    </section>
-
-    <div class="view" data-view="overview">
-    <section class="kpis">
       <div class="kpi kpi-hero">
-        <div class="meter-head">
+        <span class="kpi-icon i-rate"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18a9 9 0 1 1 16 0"/><path d="m12 14 4-5"/><circle cx="12" cy="14" r="1.2"/></svg></span>
+        <div class="hero-rate">
           <div class="meter-title" id="rateLabel">Overall pass rate</div>
-          <span class="rate-pill" id="ratePill"></span>
-        </div>
-        <div class="rate-row">
-          <div class="kpi-value" id="rateNum">–</div>
-          <span class="rate-of" id="rateOf"></span>
+          <div class="rate-row">
+            <div class="kpi-value" id="rateNum">–</div>
+            <span class="rate-pill" id="ratePill"></span>
+          </div>
         </div>
         <div class="meter" id="heroMeter">
           <div class="cbar" id="heroSplit"></div>
@@ -599,35 +786,34 @@
           </div>
         </div>
       </div>
+    </section>
+
+    <div class="view" data-view="overview">
+    <section class="kpis">
       <div class="kpi">
-        <div class="kpi-top"><span class="kpi-icon i-total">Σ</span><span class="kpi-label">Test cases</span></div>
+        <div class="kpi-top"><span class="kpi-icon i-total"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h4"/></svg></span><span class="kpi-label">Test cases</span></div>
         <div class="kpi-value" id="totalNum">–</div>
         <div class="kpi-foot" id="totalFoot">&nbsp;</div>
-        <div class="spark" data-spark="total"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-top"><span class="kpi-icon i-pass">✓</span><span class="kpi-label">Passed</span></div>
+        <div class="kpi-top"><span class="kpi-icon i-pass"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></svg></span><span class="kpi-label">Passed</span></div>
         <div class="kpi-value" id="passNum">–</div>
         <div class="kpi-foot" id="passFoot">&nbsp;</div>
-        <div class="spark" data-spark="Passed"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-top"><span class="kpi-icon i-fail">✕</span><span class="kpi-label">Failed</span></div>
+        <div class="kpi-top"><span class="kpi-icon i-fail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m9 9 6 6M15 9l-6 6"/></svg></span><span class="kpi-label">Failed</span></div>
         <div class="kpi-value" id="failNum">–</div>
         <div class="kpi-foot" id="failFoot">&nbsp;</div>
-        <div class="spark" data-spark="Failed"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-top"><span class="kpi-icon i-other">!</span><span class="kpi-label">Other / Error</span></div>
+        <div class="kpi-top"><span class="kpi-icon i-other"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 2 20h20z"/><path d="M12 10v4M12 17h.01"/></svg></span><span class="kpi-label">Other / Error</span></div>
         <div class="kpi-value" id="otherNum">–</div>
         <div class="kpi-foot" id="otherFoot">&nbsp;</div>
-        <div class="spark" data-spark="Other"></div>
       </div>
       <div class="kpi">
-        <div class="kpi-top"><span class="kpi-icon i-runs">▶</span><span class="kpi-label" id="runsLabel">Executions</span></div>
+        <div class="kpi-top"><span class="kpi-icon i-runs"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4z"/></svg></span><span class="kpi-label" id="runsLabel">Total executions</span></div>
         <div class="kpi-value" id="runsNum">–</div>
         <div class="kpi-foot" id="runsFoot">&nbsp;</div>
-        <div class="spark" data-spark="executions"></div>
       </div>
       <!-- one card per environment, added by renderHero() -->
     </section>
@@ -649,8 +835,7 @@
           <div class="trend-legend">
             <span><i style="background:var(--series-1)"></i><span id="legendOn">Month of the open report</span></span>
             <span><i style="background:var(--series-1-dim)"></i><span id="legendOff">Other months</span></span>
-            <span><i class="dash"></i><span id="legendAvg">Average</span></span>
-            <span><i class="target"></i><span>Target 80%</span></span>
+            <span><i class="target"></i><span id="legendTarget">Target 90%</span></span>
           </div>
           <div class="chart-box trend-box"><canvas id="trendChart" role="img" aria-label="Pass rate per month"></canvas></div>
         </section>
@@ -660,31 +845,30 @@
     </div>
 
     <div class="view" data-view="analytics" hidden>
-    <div class="analytics-grid">
-      <div>
-        <div class="section-head"><h2>Pass rate by environment</h2><span class="panel-note">Last 12 months · target 80%</span></div>
-        <section class="panel">
-          <div class="chart-box env-trend-box"><canvas id="envTrendChart" role="img" aria-label="Pass rate per environment per month"></canvas></div>
-        </section>
-      </div>
-      <div>
-        <div class="section-head">
-          <h2>Top 10 failing test cases</h2>
-          <div class="range-pick" id="topFailRange" role="group" aria-label="Period">
-            <button type="button" data-m="3">3 mo</button><button type="button" data-m="6" class="on">6 mo</button><button type="button" data-m="12">12 mo</button>
-          </div>
+    <div class="section-head">
+      <h2>Quality trends</h2>
+      <div class="head-actions">
+        <span class="panel-note" id="periodNote"></span>
+        <div class="range-pick" id="topFailRange" role="group" aria-label="Period for both charts">
+          <button type="button" data-m="3">3 months</button><button type="button" data-m="6" class="on">6 months</button><button type="button" data-m="12">12 months</button>
         </div>
-        <section class="panel">
-          <div class="mini-scroll" id="topFailWrap"></div>
-        </section>
       </div>
+    </div>
+    <div class="analytics-grid">
+      <section class="panel analytics-panel">
+        <div class="panel-head"><h3>Pass rate by environment</h3><span class="panel-note" id="envTrendNote">Target 90%</span></div>
+        <div class="chart-box env-trend-box"><canvas id="envTrendChart" role="img" aria-label="Pass rate per environment per month"></canvas></div>
+      </section>
+      <section class="panel analytics-panel">
+        <div class="panel-head"><h3>Top 5 failing test cases</h3><span class="panel-note">Failed includes errors</span></div>
+        <div class="mini-scroll" id="topFailWrap"></div>
+      </section>
     </div>
 
     <div class="section-head">
       <h2>Monthly executions</h2>
       <div class="head-actions">
         <span class="panel-note">Executions and success rate per month</span>
-        <button class="nav-btn" id="monthToggle" type="button" aria-expanded="true" aria-controls="monthPanel">▾ Minimize</button>
       </div>
     </div>
     <section class="panel" id="monthPanel">
@@ -694,7 +878,7 @@
     </div>
 
     <div class="view" data-view="reporting" hidden>
-    <div class="section-head"><h2>Pass rate by module</h2><span class="panel-note">Green &ge; 80% · amber 50–79% · red &lt; 50% · hover a bar for counts</span></div>
+    <div class="section-head"><h2>Pass rate by module</h2><span class="panel-note">Green &ge; 90% · amber 60–89% · red &lt; 60% · hover a bar for counts</span></div>
     <section class="panel">
       <div class="chart-box" id="barBox"><canvas id="barChart" role="img" aria-label="Pass rate by environment and module"></canvas></div>
     </section>
@@ -961,10 +1145,12 @@ function esc(v){
   return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function pctOf(n, total){ return total ? (n / total * 100).toFixed(1) + '%' : '—'; }
-function rateLevel(p){ return p >= 80 ? 'good' : p >= 50 ? 'warn' : 'bad'; }
-const TARGET_PCT = 80; // release quality target used by the charts
-function healthColor(p){ return cssVar(p >= TARGET_PCT ? '--pass' : p >= 50 ? '--other' : '--fail'); }
-function rateWord(p){ return p >= 80 ? 'Healthy' : p >= 50 ? 'Needs attention' : 'Critical'; }
+function rateLevel(p){ return p >= TARGET_PCT ? 'good' : p >= WARN_PCT ? 'warn' : 'bad'; }
+const TARGET_PCT = 90; // release quality target: green at or above
+const WARN_PCT = 60;   // amber/orange from here up to the target, red (Critical) below
+function healthColor(p){ return cssVar(p >= TARGET_PCT ? '--pass' : p >= WARN_PCT ? '--other' : '--fail'); }
+function pctTextColor(p){ return cssVar(p >= TARGET_PCT ? '--pass-text' : p >= WARN_PCT ? '--warn-text' : '--fail-text'); }
+function rateWord(p){ return p >= TARGET_PCT ? 'Healthy' : p >= WARN_PCT ? 'Needs attention' : 'Critical'; }
 function toDate(v){
   if(!v) return null;
   // Tosca/ToscaDB format: dd-mm-yyyy or dd/mm/yyyy [hh:mm[:ss]] (day first, not US month first)
@@ -1029,14 +1215,13 @@ function renderHero(){
   document.getElementById('monthSubHeading').textContent = parts.length ? parts.join(' · ') : 'No execution reports found yet.';
   const kpis = document.querySelector('.kpis');
   kpis.querySelectorAll('.kpi-env').forEach(el => el.remove());
-  kpis.insertAdjacentHTML('beforeend', envs.map(e => {
+  kpis.insertAdjacentHTML('afterbegin', envs.map(e => {
     const s = tally(rows.filter(r => r.Environment === e));
     return `<div class="kpi kpi-env">
-        <div class="kpi-top"><span class="kpi-icon i-env">◉</span><span class="kpi-label" title="${esc(e)}">${esc(e)}</span></div>
+        <div class="kpi-top"><span class="kpi-icon i-env"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><span class="kpi-label" title="${esc(e)}">${esc(e)}</span></div>
         <div class="kpi-value ${s.total ? rateLevel(s.pct) : ''}">${s.total ? s.pct.toFixed(1) + '%' : '–'}</div>
         ${s.total ? `<span class="rate-pill ${rateLevel(s.pct)}">${rateWord(s.pct)}</span>` : ''}
         <div class="kpi-foot">${s.Passed.toLocaleString()} of ${s.total.toLocaleString()} passed</div>
-        <div class="spark" data-spark="env" data-env="${esc(e)}"></div>
       </div>`;
   }).join(''));
   kpis.style.setProperty('--kpi-cols', 5 + envs.length);
@@ -1049,6 +1234,7 @@ function renderSummary(){
   document.getElementById('failNum').textContent = s.Failed.toLocaleString();
   document.getElementById('otherNum').textContent = s.Other.toLocaleString();
   document.getElementById('rateNum').textContent = s.total ? s.pct.toFixed(1) + '%' : '–';
+  document.getElementById('rateNum').className = 'kpi-value' + (s.total ? ' ' + rateLevel(s.pct) : '');
   const pill = document.getElementById('ratePill');
   pill.className = 'rate-pill' + (s.total ? ' ' + rateLevel(s.pct) : '');
   pill.textContent = s.total ? rateWord(s.pct) : '';
@@ -1064,16 +1250,14 @@ function renderSummary(){
   document.getElementById('runsNum').textContent = selMonth ? live.length.toLocaleString() : '–';
   const cur = reports.get(selectedMonth);
   document.getElementById('runsFoot').textContent = !selMonth ? ' '
-    : cur ? `${shortMonth(selMonth)} · viewing execution ${runNumber(cur)} of ${live.length}`
-    : live.length ? `${shortMonth(selMonth)} · latest ${live[live.length - 1].last ? live[live.length - 1].last.toLocaleString('en-GB', { day: '2-digit', month: 'short' }) : '—'}` : 'no executions';
+    : cur ? `viewing execution ${runNumber(cur)} of ${live.length}` : `${live.length === 1 ? 'execution' : 'executions'} this month`;
   document.getElementById('passFoot').textContent = s.total ? `${pctOf(s.Passed, s.total)} of total` : ' ';
   document.getElementById('failFoot').textContent = s.total ? `${pctOf(s.Failed, s.total)} of total` : ' ';
   document.getElementById('otherFoot').textContent = s.total ? `${pctOf(s.Other, s.total)} of total` : ' ';
   document.getElementById('heroSplit').innerHTML = !s.total ? '<span class="seg seg-none"></span>'
     : ['Passed','Failed','Other'].filter(k => s[k]).map(k =>
         `<span class="seg seg-${k.toLowerCase()}" data-k="${k}" style="flex:${s[k]}" title="${k}: ${s[k]} (${pctOf(s[k], s.total)})"></span>`).join('');
-  document.getElementById('rateOf').textContent = s.total ? `of ${s.total.toLocaleString()} TCs` : '';
-}
+  }
 
 function renderEnvPanels(){
   const grid = document.getElementById('envGrid');
@@ -1091,13 +1275,13 @@ function renderEnvPanels(){
         <td class="num">${s.Passed}</td>
         <td class="num">${s.Failed}</td>
         <td class="num">${s.Other}</td>
-        <td><div class="meter-cell">${splitBar(s, 'sm')}<span class="val">${s.pct.toFixed(1)}%</span></div></td>
+        <td><div class="meter-cell">${splitBar(s, 'sm')}<span class="val ${rateLevel(s.pct)}">${s.pct.toFixed(1)}%</span></div></td>
       </tr>`;
     }).join('');
     return `<section class="panel env-card">
       <div class="env-head">
-        <div><div class="eyebrow">Environment</div><h3>${esc(env)}</h3></div>
-        <div class="env-rate"><div class="big">${es.pct.toFixed(1)}%</div><span class="rate-pill ${rateLevel(es.pct)}">${rateWord(es.pct)}</span></div>
+        <div class="env-title"><span class="kpi-icon i-env"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><div><div class="eyebrow">Environment</div><h3>${esc(env)}</h3></div></div>
+        <div class="env-rate"><div class="big ${rateLevel(es.pct)}">${es.pct.toFixed(1)}%</div><span class="rate-pill ${rateLevel(es.pct)}">${rateWord(es.pct)}</span></div>
       </div>
       ${splitBar(es)}
       <div class="env-meta tnum">${es.total} test cases · ${es.Passed} passed · ${es.Failed} failed · ${es.Other} other</div>
@@ -1254,7 +1438,7 @@ function renderTrend(){
         <td class="num">${m.Passed.toLocaleString()}</td>
         <td class="num">${m.Failed.toLocaleString()}</td>
         <td class="num">${m.Other.toLocaleString()}</td>
-        <td><div class="meter-cell">${splitBar(m, 'sm')}<span class="val">${m.pct.toFixed(1)}%</span></div></td>
+        <td><div class="meter-cell">${splitBar(m, 'sm')}<span class="val ${rateLevel(m.pct)}">${m.pct.toFixed(1)}%</span></div></td>
         <td class="num">${delta}</td>
       </tr>${open ? `<tr class="chips-row"><td></td><td colspan="7"><div class="run-chips">${chips}</div></td></tr>` : ''}`;
     }).join('');
@@ -1302,10 +1486,10 @@ function renderTrendChart(){
 
   const ink = cssVar('--text'), muted = cssVar('--muted');
   const font = "'Poppins', 'Segoe UI', system-ui, sans-serif";
-  const on = cssVar('--series-1'), dim = cssVar('--series-1-dim');
-  // dashed reference line: average monthly pass rate (all months), or the month's overall rate (drilled)
-  const avg = drill ? drill.pct : items.reduce((a, i) => a + i.pct, 0) / items.length;
-  document.getElementById('legendAvg').textContent = drill ? `Month overall ${avg.toFixed(1)}%` : `Avg monthly pass rate ${avg.toFixed(1)}%`;
+  // logo blue for the selected bar; other bars light blue, or grey when a single execution is open
+  const oneSelected = !!(drill && selectedMonth);
+  const on = cssVar('--series-1'), dim = oneSelected ? cssVar('--seg-mute') : cssVar('--series-1-dim');
+  document.getElementById('legendTarget').textContent = `Target ${TARGET_PCT}%`;
   trendChart = new Chart(document.getElementById('trendChart'), {
     type: 'bar',
     data: { labels: items.map(i => i.label), datasets: [{
@@ -1313,12 +1497,8 @@ function renderTrendChart(){
       backgroundColor: items.map(i => i.active ? on : dim), hoverBackgroundColor: on,
       borderRadius: 4, borderSkipped: 'start', maxBarThickness: 44, categoryPercentage: .8, order: 2
     }, {
-      type: 'line', label: 'Average', data: items.map(() => +avg.toFixed(1)),
-      borderColor: muted, borderWidth: 1.5, borderDash: [5, 4], pointRadius: 0, pointHitRadius: 0,
-      fill: false, order: 1
-    }, {
       type: 'line', label: 'Target', data: items.map(() => TARGET_PCT),
-      borderColor: cssVar('--pass'), borderWidth: 1.5, pointRadius: 0, pointHitRadius: 0,
+      borderColor: cssVar('--pass'), borderWidth: 2, borderDash: [2, 4], borderCapStyle: 'round', pointRadius: 0, pointHitRadius: 0,
       fill: false, order: 0
     }]},
     options: {
@@ -1369,7 +1549,7 @@ function renderTrendChart(){
         ctx.font = `700 11px ${font}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        chart.getDatasetMeta(0).data.forEach((bar, i) => ctx.fillText(items[i].pct.toFixed(0) + '%', bar.x, bar.y - 4));
+        chart.getDatasetMeta(0).data.forEach((bar, i) => { ctx.fillStyle = pctTextColor(items[i].pct); ctx.fillText(items[i].pct.toFixed(0) + '%', bar.x, bar.y - 4); });
         ctx.restore();
       }
     }]
@@ -1396,29 +1576,11 @@ document.getElementById('monthTableWrap').addEventListener('click', (e) => {
   if(m) openMonth_(m.month);
 });
 
-// minimise / expand the monthly executions table (remembered in this browser)
-(function(){
-  const btn = document.getElementById('monthToggle');
-  const panel = document.getElementById('monthPanel');
-  function apply(collapsed){
-    panel.classList.toggle('collapsed', collapsed);
-    btn.textContent = collapsed ? '▸ Expand' : '▾ Minimize';
-    btn.setAttribute('aria-expanded', String(!collapsed));
-  }
-  let collapsed = false;
-  try{ collapsed = localStorage.getItem('monthTableCollapsed') === '1'; }catch(e){}
-  apply(collapsed);
-  btn.addEventListener('click', () => {
-    collapsed = !panel.classList.contains('collapsed');
-    apply(collapsed);
-    try{ localStorage.setItem('monthTableCollapsed', collapsed ? '1' : '0'); }catch(e){}
-  });
-})();
-
 // ---------- left side menu: switch between dashboard views ----------
 const VIEWS = ['overview', 'reporting', 'analytics'];
 function setView(name){
   if(!VIEWS.includes(name)) name = 'overview';
+  document.body.dataset.view = name;
   document.querySelectorAll('.view').forEach(v => { v.hidden = v.dataset.view !== name; });
   document.querySelectorAll('.nav-item').forEach(b => {
     const on = b.dataset.view === name;
@@ -1438,6 +1600,25 @@ document.querySelectorAll('.nav-item').forEach(b => b.addEventListener('click', 
   window.scrollTo({top: 0});
 }));
 (function(){ let v = 'overview'; try{ v = localStorage.getItem('dashboardView') || v; }catch(e){} setView(v); })();
+(function(){
+  const shell = document.querySelector('.shell'), btn = document.getElementById('navCollapse');
+  function apply(c){
+    shell.classList.toggle('nav-collapsed', c);
+    const label = c ? 'Expand menu' : 'Collapse menu';
+    btn.setAttribute('aria-label', label); btn.title = label; btn.setAttribute('aria-expanded', String(!c));
+    document.querySelectorAll('.nav-item').forEach(b => { b.title = c ? b.textContent.trim() : ''; });
+  }
+  let c = false;
+  try{ c = localStorage.getItem('navCollapsed') === '1'; }catch(e){}
+  apply(c);
+  btn.addEventListener('click', () => {
+    c = !shell.classList.contains('nav-collapsed');
+    apply(c);
+    try{ localStorage.setItem('navCollapsed', c ? '1' : '0'); }catch(e){}
+    // charts follow their container width
+    setTimeout(() => [barChart, trendChart, envTrendChart].forEach(ch => ch && ch.resize()), 220);
+  });
+})();
 
 function openReportForRow(row){
   const pdfPath = row.ReportPath || row.ReportFile || row.ReportUrl || row.PdfPath || row.Report;
@@ -1518,9 +1699,11 @@ var envTrendChart;   // var: may be used by renders that run before this line
 var topFailMonths = 6;
 
 function renderAnalytics(){
-  const months = monthStats().slice(-12);
+  const months = monthStats().slice(-topFailMonths);   // same period as the top failing list
   const font = "'Poppins', 'Segoe UI', system-ui, sans-serif";
   const muted = cssVar('--muted'), ink = cssVar('--text');
+  document.getElementById('envTrendNote').textContent = `Target ${TARGET_PCT}%`;
+  document.getElementById('periodNote').textContent = months.length ? `${monthLabel(months[0].month)} – ${monthLabel(months[months.length - 1].month)}` : '';
   if(envTrendChart){ envTrendChart.destroy(); envTrendChart = null; }
   const envs = [...new Set(months.flatMap(m => m.rows.map(r => r.Environment)))].filter(Boolean).sort();
   if(months.length && envs.length && window.Chart){
@@ -1571,7 +1754,7 @@ function renderAnalytics(){
       const d = toDate(r.StartTime); if(d && (!x.last || d > x.last)) x.last = d;
     }
   }));
-  const top = [...map.values()].filter(x => x.fails).sort((a, b) => b.fails - a.fails || b.fails / b.runs - a.fails / a.runs).slice(0, 10);
+  const top = [...map.values()].filter(x => x.fails).sort((a, b) => b.fails - a.fails || b.fails / b.runs - a.fails / a.runs).slice(0, 5);
   const from = period.length ? shortMonth(period[0].month) : '', to = period.length ? shortMonth(period[period.length - 1].month) : '';
   wrap.innerHTML = !top.length ? '<div class="empty">No failures in this period.</div>' :
     `<table class="mini top-fail"><thead><tr><th>Test case</th><th class="num">Failed</th><th class="num">Runs</th><th>Fail rate</th><th>Last failed</th></tr></thead><tbody>` +
@@ -1580,7 +1763,7 @@ function renderAnalytics(){
       <td class="num"><b>${x.fails}</b></td><td class="num">${x.runs}</td>
       <td><div class="fail-rate"><span class="bar"><i style="width:${fr.toFixed(1)}%"></i></span><span class="tnum">${fr.toFixed(0)}%</span></div></td>
       <td class="cell-muted" style="white-space:nowrap">${x.last ? x.last.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }) : '—'}</td>
-    </tr>`; }).join('') + `</tbody></table><div class="panel-note" style="margin-top:10px">${from} – ${to} · failed includes errors</div>`;
+    </tr>`; }).join('') + `</tbody></table>`;
 }
 
 document.getElementById('topFailRange').addEventListener('click', (e) => {
@@ -1591,44 +1774,9 @@ document.getElementById('topFailRange').addEventListener('click', (e) => {
   renderAnalytics();
 });
 
-// mini bar charts at the bottom of the summary cards: one bar per month
-function renderSparks(){
-  // the latest 12 months; if the open month is older than that, the 12 months ending at it
-  const all = monthStats();
-  let end = all.length;
-  const sel = all.findIndex(m => m.month === selMonth);
-  if(sel !== -1 && sel < end - 12) end = sel + 1;
-  const months = all.slice(Math.max(0, end - 12), end);
-  const color = { total: '--series-1', Passed: '--pass', Failed: '--fail', Other: '--other', executions: '--series-1', env: '--series-1' };
-  document.querySelectorAll('.spark').forEach(el => {
-    const key = el.dataset.spark;
-    if(!months.length){ el.innerHTML = ''; return; }
-    const vals = months.map(m => {
-      if(key === 'executions') return m.runs.length;
-      if(key === 'env') return tally(m.rows.filter(r => r.Environment === el.dataset.env)).pct;
-      return m[key];
-    });
-    const max = key === 'env' ? 100 : Math.max(1, ...vals);
-    const n = vals.length, w = 120, h = 40, gap = 3, bw = (w - gap * (n - 1)) / n;
-    const fill = `var(${color[key]})`; // CSS variable, so it follows light/dark theme
-    el.innerHTML = `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none" aria-hidden="true">` + vals.map((v, i) => {
-      const bh = Math.max(2, v / max * h);
-      const t = `${monthLabel(months[i].month)}: ${key === 'env' ? v.toFixed(1) + '%' : v.toLocaleString()} · click to open this month`;
-      return `<rect class="${months[i].month === selMonth ? 'on' : ''}" data-month="${esc(months[i].month)}" x="${(i * (bw + gap)).toFixed(2)}" y="${(h - bh).toFixed(2)}" width="${bw.toFixed(2)}" height="${bh.toFixed(2)}" rx="1.5" fill="${fill}"><title>${t}</title></rect>`;
-    }).join('') + '</svg>';
-  });
-}
-
-// clicking a sparkline bar opens that month, the same as clicking it on the Monthly trend chart
-document.querySelector('.kpis').addEventListener('click', (e) => {
-  const bar = e.target.closest('.spark rect[data-month]');
-  if(bar && bar.dataset.month !== selMonth) openMonth_(bar.dataset.month);
-});
-
 function renderAll(){
   renderHero();
   renderSummary();
-  renderSparks();
   renderTrend();
   renderCharts();
   renderEnvPanels();
