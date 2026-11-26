@@ -7,7 +7,8 @@ Layout:
   data/ToscaExecutionDashboard.html     static snapshot (served at /execution)
 
 Install:  pip install -r dashboard/requirements.txt
-Run:      python dashboard/server.py
+Run:      python dashboard/server.py          (replaces any server already running)
+Stop:     python dashboard/server.py --stop
 Open:     http://127.0.0.1:5000
 
 Dashboard rows are read from Supabase by default (RESULTS_SOURCE=auto), falling
@@ -218,10 +219,69 @@ def summary():
         return jsonify({"error": str(exc)}), 500
 
 
+PORT = int(os.getenv("PORT", "5000"))
+
+# Finds earlier dashboard servers: python processes running dashboard\server.py,
+# plus whatever python process listens on PORT with server.py on its command line.
+# Our own process and its parent (e.g. the py.exe launcher) are excluded.
+_FIND_OLD_SERVERS_PS = r"""
+$skip = @({self_pid}, {parent_pid})
+$byName = Get-CimInstance Win32_Process -Filter "Name like 'python%'" |
+    Where-Object {{ $_.CommandLine -match 'dashboard[\\/]+server\.py' }} |
+    ForEach-Object {{ $_.ProcessId }}
+$byPort = Get-NetTCPConnection -LocalPort {port} -State Listen -ErrorAction SilentlyContinue |
+    ForEach-Object {{ Get-CimInstance Win32_Process -Filter "ProcessId=$($_.OwningProcess)" }} |
+    Where-Object {{ $_.CommandLine -match 'server\.py' }} |
+    ForEach-Object {{ $_.ProcessId }}
+@($byName) + @($byPort) | Where-Object {{ $_ -and ($skip -notcontains $_) }} | Sort-Object -Unique
+"""
+
+
+def stop_previous_instances() -> list[int]:
+    """Stop every earlier dashboard server so only one ever runs. Windows only."""
+    if os.name != "nt":
+        return []
+    import subprocess
+    import time
+
+    script = _FIND_OLD_SERVERS_PS.format(
+        self_pid=os.getpid(), parent_pid=os.getppid(), port=PORT
+    )
+    found = subprocess.run(
+        ["powershell", "-NoProfile", "-Command", script],
+        capture_output=True, text=True, timeout=30,
+    ).stdout.split()
+    pids = [int(p) for p in found if p.isdigit()]
+    for pid in pids:
+        # /T also ends the child process the old debug reloader started.
+        subprocess.run(["taskkill", "/PID", str(pid), "/T", "/F"], capture_output=True)
+
+    # Wait until the port is free so the new server can bind it.
+    import socket
+    for _ in range(20):
+        with socket.socket() as probe:
+            if probe.connect_ex(("127.0.0.1", PORT)) != 0:
+                break
+        time.sleep(0.25)
+    return pids
+
+
 if __name__ == "__main__":
+    import sys
+
+    stopped = stop_previous_instances()
+    if stopped:
+        print(f"Stopped previous dashboard server(s): PID {', '.join(map(str, stopped))}")
+    if "--stop" in sys.argv[1:]:
+        if not stopped:
+            print("No dashboard server was running.")
+        raise SystemExit(0)
+
     print(f"Local database : {DATABASE_FILE}")
     print(f"Dashboard HTML: {DASHBOARD_FILE}")
     print(f"Cloud sync     : {sync_status()}")
     print(f"Results source : {os.getenv('RESULTS_SOURCE', 'auto')}")
-    print("Open dashboard : http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=True)
+    print(f"Open dashboard : http://127.0.0.1:{PORT}")
+    print("Stop it with   : Ctrl+C here, or python dashboard\\server.py --stop")
+    # debug=False: no reloader child process and no interactive debugger.
+    app.run(host="127.0.0.1", port=PORT, debug=False)

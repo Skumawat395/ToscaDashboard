@@ -96,6 +96,7 @@ ToscaDashboard/
 Do this once on the machine that has Tosca installed.
 
 ### 2.1 Install Python packages
+`Execute.bat` installs them automatically if they are missing. To install them yourself:
 ```powershell
 cd D:\TFW\Automation\ToscaDashboard
 pip install -r dashboard\requirements.txt
@@ -132,9 +133,13 @@ All commands are run from the project folder (`D:\TFW\Automation\ToscaDashboard`
 | When | Run | What happens |
 |---|---|---|
 | **After Tosca executions** | Double-click **`Execute.bat`** | Reads all execution logs, adds the new ones (one report per execution), syncs to Supabase, rebuilds the snapshot, and opens the dashboard. |
-| You only want to view the dashboard | `python dashboard\server.py`, then open http://127.0.0.1:5000 | Starts the server. `Execute.bat` also starts it if it isn't running. |
+| Automatically after a scheduled execution | `Execute.bat /auto` (e.g. in Task Scheduler) | Same steps, without the pause or opening the browser. Exit code 0 = success, 1 = failed. |
+| You only want to view the dashboard | `python dashboard\server.py`, then open http://127.0.0.1:5000 | Starts the server and **stops any earlier instance first**, so only one ever runs. `Execute.bat` restarts it the same way. |
+| You want the dashboard switched off | `python dashboard\server.py --stop` (or Ctrl+C in its window) | Stops every running dashboard server. Nothing else is left running. |
 | Supabase was down during an import | `python dashboard\sync_supabase.py` | Uploads the runs still waiting. Every import also retries automatically. |
 | After changing code | `python -m unittest discover -s dashboard\tests` | Runs the storage tests. |
+
+> `Execute.bat` checks Python, the packages and `data\.env` first, and **stops with a clear message at the first failing step** instead of opening an out-of-date dashboard.
 
 > You don't have to run `Execute.bat` after **every** execution. If several executions happened since the last import, each one becomes its own report. Running it right after each execution keeps the dashboard current.
 
@@ -201,7 +206,7 @@ Open **http://127.0.0.1:5000** and log in with `DASHBOARD_USERNAME` / `DASHBOARD
 
 | Problem | Fix |
 |---|---|
-| Dashboard says **"No reports available"** | Open `/api/health`. If `total_runs` is 0, run `Execute.bat`. Make sure only **one** server is running (`Get-NetTCPConnection -LocalPort 5000`), then restart it with `python dashboard\server.py`. |
+| Dashboard says **"No reports available"** | Open `/api/health`. If `total_runs` is 0, run `Execute.bat`. Restart the server with `python dashboard\server.py`. It replaces any server already running. |
 | `ERROR: ...\data\.env not found` | Copy `dashboard\.env.example` to `data\.env` and fill it in. |
 | `ERROR: TOSCA_AUTH is not set` | Add the `TOSCA_` lines to `data\.env`. |
 | `TCShell failed - see data\RawData.txt` | Read the end of `data\RawData.txt`. Usually it's a licence, auth or workspace path problem. |

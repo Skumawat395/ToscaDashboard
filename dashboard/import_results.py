@@ -582,6 +582,9 @@ def main():
         print()
         print("=" * 70)
 
+        # Non-zero exit so Execute.bat stops instead of showing stale data.
+        sys.exit(1)
+
 
 # ============================================================
 # RUN
