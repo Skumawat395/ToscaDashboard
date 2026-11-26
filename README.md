@@ -27,8 +27,11 @@ Collects Tosca execution results after each run, stores them in a local SQLite d
 
 ```
 ToscaDashboard/
-├─ Execute.bat                 ← THE file you run after every Tosca execution
+├─ Execute.bat                 ← THE file you run after every Tosca execution (Tosca PC)
+├─ Setup_Dashboard_VM.bat      ← one-time setup of the shared dashboard (VM)
 ├─ README.md
+├─ deploy/
+│  └─ iis-automationreports-rule.xml  ← IIS rule for ondemandqa.com/automationreports
 ├─ tosca/                      ← everything TCShell / Tosca
 │  ├─ run_tcshell.bat
 │  ├─ GetResults.tcs
@@ -40,6 +43,7 @@ ToscaDashboard/
 │  ├─ result_store.py
 │  ├─ sync_supabase.py
 │  ├─ web/dashboard.html
+│  ├─ execution_lists.json   ← project / module / environment per execution list
 │  ├─ supabase_schema.sql
 │  ├─ requirements.txt
 │  ├─ .env.example
@@ -57,7 +61,7 @@ ToscaDashboard/
 | File | Purpose |
 |---|---|
 | `run_tcshell.bat` | Reads `TOSCA_TCSHELL`, `TOSCA_WORKSPACE` and `TOSCA_AUTH` from `data\.env` and runs `GetResults.tcs` with TCShell. Command echo is off, so the auth value never reaches the log. |
-| `GetResults.tcs` | Visits each execution list (RISE QM/MM/PM/PP/SD, ROW MM/SD), prints the environment and module names, and calls `scripts\GetIndividualResult.tcs` for every execution entry. |
+| `GetResults.tcs` | Visits each execution list (RISE QM/MM/PM/PP/SD, ROW MM/SD), prints the project folder and execution list names, and calls `scripts\GetIndividualResult.tcs` for every execution entry. |
 | `scripts\GetIndividualResult.tcs` | Gets **every** test case log of one execution entry, newest first. Logs already imported are skipped by `import_results.py`. |
 | `scripts\GetTestCaseLog.tcs` | Prints `Result`, `StartTime` and `EndTime`, then calls `GetTestCaseName.tcs`. |
 | `scripts\GetTestCaseName.tcs` | Prints the test case `Name`, `CreatedBy` and `CreatedAt`. |
@@ -145,10 +149,28 @@ All commands are run from the project folder (`D:\TFW\Automation\ToscaDashboard`
 
 ---
 
+## Project, module and environment
+
+Tosca only gives the folder and execution list names. `dashboard\execution_lists.json` maps each list to what the dashboard shows:
+
+| Execution list (Tosca) | Project | Module | Environment |
+|---|---|---|---|
+| `QM_RISE_QA_SeparateExeList` | RISE_INDIA | QM | QA |
+| `MM_RISE_QA_SeparateExeList` | RISE_INDIA | MM | QA |
+| `PM_RISE_QA` (was `PM_Raise_QA`) | RISE_INDIA | PM | QA |
+| `PP_RISE_QA` | RISE_INDIA | PP | QA |
+| `SD_RISE_QA` | RISE_INDIA | SD | QA |
+| `ROW_MM` | ROW | MM | QA |
+| `ROW_SD` | ROW | SD | QA |
+
+The database keeps the raw Tosca names, so editing this file never changes stored results; it only changes how they are shown.
+
+---
+
 ## 4. How reports and duplicates work
 
 - **One execution = one report.** TCShell returns **every** log of every execution entry, old ones included.
-- **Duplicates are skipped.** A result is identified by **environment + module + test case + start time**. Logs already in the database are skipped, so:
+- **Duplicates are skipped.** A result is identified by **project folder + execution list + test case + start time**. A renamed list (`renamed_from` in `execution_lists.json`) counts as the same list. Logs already in the database are skipped, so:
   - logs from executions since the last import → stored;
   - logs imported earlier → skipped, because they are already stored;
   - nothing executed since the last import → no report is created, and the script prints *"nothing was added"*.
@@ -170,14 +192,14 @@ All commands are run from the project folder (`D:\TFW\Automation\ToscaDashboard`
 Open **http://127.0.0.1:5000** and log in with `DASHBOARD_USERNAME` / `DASHBOARD_PASSWORD`.
 
 - **The latest report opens by default.** Use the **Report** dropdown at the top to open any earlier report; they are grouped by month.
-- **New results appear automatically:** the page refreshes every 60 seconds. If you haven't picked a report yourself, it moves to the newest one.
-- **Status in the top bar:** *"Updated 15:32 · Supabase"* (green) means data loaded. *"Offline · retrying"* (red) means the server could not be reached.
+- **New results appear automatically:** the page checks for new results **once an hour** (only while the tab is open in front, and only if you're logged in). **Click the status text** at the top (*"Last updated …"*) to check right away, for example just after `Execute.bat` finished. If you haven't picked a report yourself, it moves to the newest one. To change the interval, edit `REFRESH_MINUTES` in `dashboard\web\dashboard.html`.
+- **Status in the top bar:** *"Updated 15:32 · Supabase"* (green) means data loaded. *"Offline · click to retry"* (red) means the server could not be reached; it also retries on the next hourly check.
 - **Sections, top to bottom:**
   1. **Pass rate tile:** the overall pass rate with a Healthy (≥ 80%), Needs attention (50–79%) or Critical (< 50%) label, and the passed / failed / other split.
   2. **Count tiles:** Total, Passed, Failed and Other / Error.
   3. **Pass rate by module:** a chart sorted from highest to lowest. Hover a bar for its counts.
-  4. **Environments:** one card per environment with a module table. **Click a module** to filter the test case table to it.
-  5. **Test case detail:** search, filters for environment, module and result, and *Clear filters*. Failures are listed first. Shows the execution time and duration, plus a **View report** link per test case.
+  4. **Projects:** one card per project (RISE_INDIA, ROW) with a module table. **Click a module** to filter the test case table to it.
+  5. **Test case detail:** search, filters for project, environment (QA / SIT / PROD), module and result, and *Clear filters*. Failures are listed first. Shows the execution time and duration, plus a **View report** link per test case.
 - **Dark mode** follows your Windows or browser setting.
 - `http://127.0.0.1:5000/execution` shows the static snapshot from `data\ToscaExecutionDashboard.html`.
 
@@ -187,14 +209,20 @@ Open **http://127.0.0.1:5000** and log in with `DASHBOARD_USERNAME` / `DASHBOARD
 |---|---|
 | `/api/health` | Server status, results source, total runs and runs pending sync. No login needed. |
 | `/api/results` | All result rows and the source used (`supabase` or `local`). Needs login. |
-| `/api/summary` | Counts by result, environment and module. Needs login. |
+| `/api/summary` | Counts by result, project folder and execution list. Needs login. |
 | `/api/sync` (POST) | Retries the Supabase upload. Needs login. |
 
 ---
 
 ## 6. Common changes
 
-**Add a new execution list:** in `tosca\GetResults.tcs`, copy one of the existing blocks and change both `JumpToNode` paths. Adjust the number of `cn ..` lines so the first `get Name` lands on the **environment** folder, because the environment folder sits at a different depth in different lists. Script paths inside `.tcs` files are relative to `tosca\`, for example `"scripts\\GetIndividualResult.tcs"`.
+**Add a new execution list:**
+1. In `tosca\GetResults.tcs`, copy one of the existing blocks and change both `JumpToNode` paths. Adjust the number of `cn ..` lines so the first `get Name` lands on the **project** folder (RISE_INDIA, ROW), because it sits at a different depth in different lists. Script paths inside `.tcs` files are relative to `tosca\`, for example `"scripts\\GetIndividualResult.tcs"`.
+2. In `dashboard\execution_lists.json`, add the list with its `project`, `module` and `environment`. A list missing from this file still appears, but under its full list name and the `default_environment`.
+
+**Rename an execution list in Tosca:** update its `JumpToNode` paths in `tosca\GetResults.tcs`, rename its key in `execution_lists.json`, and add the old name to `renamed_from`. Its history stays together and old logs are not imported again.
+
+**Change a list's environment (QA / SIT / PROD):** edit `environment` for that list in `execution_lists.json`, then restart the server. Results already stored are shown with the new value.
 
 **Read only from the local database:** set `RESULTS_SOURCE=local` in `data\.env`, then restart `server.py`.
 
@@ -209,7 +237,10 @@ Open **http://127.0.0.1:5000** and log in with `DASHBOARD_USERNAME` / `DASHBOARD
 | Dashboard says **"No reports available"** | Open `/api/health`. If `total_runs` is 0, run `Execute.bat`. Restart the server with `python dashboard\server.py`. It replaces any server already running. |
 | `ERROR: ...\data\.env not found` | Copy `dashboard\.env.example` to `data\.env` and fill it in. |
 | `ERROR: TOSCA_AUTH is not set` | Add the `TOSCA_` lines to `data\.env`. |
-| `TCShell failed - see data\RawData.txt` | Read the end of `data\RawData.txt`. Usually it's a licence, auth or workspace path problem. |
+| `TCShell not found at ...` | TCShell isn't installed on this PC (the Tosca Commander **SAP** edition doesn't include it). Run `Execute.bat` on the PC that has TCShell, or set `TOSCA_TCSHELL` in `data\.env` to its path. |
+| `TCShell failed` | Read `data\RawData.new.txt`. Usually it's a licence, auth or workspace path problem. The last good `RawData.txt` is kept. |
+| `ondemandqa.com/automationreports` shows an IIS error (502 / 404) | On the VM open `http://127.0.0.1:5000/api/health`. If that fails, the dashboard isn't running: run `Setup_Dashboard_VM.bat` again. If it works, check the IIS rule (section 9) and that ARR proxy is enabled. |
+| Dashboard page loads but stays on the login screen / data never loads | `URL_PREFIX` in the VM's `data\.env` must be `/automationreports` (same as the link), then restart the task. |
 | *"All results were already imported; nothing was added."* | Normal when nothing was executed since the last import. |
 | `/api/health` shows `pending_runs` > 0 | Supabase was unreachable. Run `python dashboard\sync_supabase.py`. |
 | Login says credentials are not configured | Set `DASHBOARD_USERNAME` and `DASHBOARD_PASSWORD` in `data\.env`, then restart the server. |
@@ -222,4 +253,51 @@ Open **http://127.0.0.1:5000** and log in with `DASHBOARD_USERNAME` / `DASHBOARD
 - **Everything in `data\` is ignored by git.** That covers `.env` (Tosca client secret, Supabase secret key, dashboard password), the database, and `RawData.txt`.
 - `tosca\run_tcshell.bat` runs with command echo off, so the Tosca auth value is never written to `RawData.txt`.
 - Earlier commits contain the old Tosca client secret (in `SchedulerBatchFile.bat` and `Results/RawData.txt`). **Rotate it in Tosca** and put the new value in `TOSCA_AUTH`.
-- The server listens on `127.0.0.1` only, so it can be reached from this machine and nowhere else.
+- By default the server listens on `127.0.0.1` only, so it can be reached from this machine and nowhere else. `HOST=0.0.0.0` (or `--share`) opens it to the network; only do that on the VM, behind IIS.
+- On the VM, use **https** for the team link (the login password is otherwise sent unencrypted) and set `SESSION_COOKIE_SECURE=1`.
+- The VM's `data\.env` holds the Supabase secret key: only admins should be able to log on to the VM.
+
+---
+
+## 9. Shared dashboard on the VM (ondemandqa.com/automationreports)
+
+```
+ Tosca PC (TCShell)                 Supabase                 Dashboard VM (Windows)
+ Execute.bat ── import ──────────►  results  ◄────────────── server.py (auto-start, waitress)
+ START_LOCAL_DASHBOARD=no                                     ▲
+                                                              │  IIS rule /automationreports
+                          https://ondemandqa.com/automationreports/  ← team link (company network / VPN)
+```
+
+The VM only **shows** results; it doesn't need Tosca, TCShell or the local database.
+
+### 9.1 On the VM (once)
+1. Install **Python 3 for all users** (tick *Add python.exe to PATH*).
+2. Copy this project folder to the VM, e.g. `D:\ToscaDashboard`.
+3. Create `data\.env` from `dashboard\.env.example` with:
+   ```
+   DASHBOARD_USERNAME=...            DASHBOARD_PASSWORD=...
+   FLASK_SECRET_KEY=<long random text>
+   SUPABASE_URL=...                  SUPABASE_KEY=<secret key>
+   RESULTS_SOURCE=supabase
+   URL_PREFIX=/automationreports
+   DASHBOARD_URL=https://ondemandqa.com/automationreports/
+   SESSION_COOKIE_SECURE=1           (only if the link is https)
+   HOST=127.0.0.1                    (IIS on this VM)  or  0.0.0.0  (IIS on another server)
+   PORT=5000
+   ```
+4. Right-click **`Setup_Dashboard_VM.bat` > Run as administrator.** It installs the packages, opens the firewall port when `HOST=0.0.0.0`, registers the **"Tosca Dashboard"** scheduled task (starts with Windows, restarts if it stops), starts it and checks it answers.
+
+### 9.2 On the IIS server for ondemandqa.com (once, IIS admin)
+Install **URL Rewrite** and **Application Request Routing**, enable the ARR proxy, and add the rule from `deploy\iis-automationreports-rule.xml` to the ondemandqa.com site. The file explains each step and what to put for `DASHBOARD-HOST`.
+
+### 9.3 On the Tosca PC (once)
+In its `data\.env` set `START_LOCAL_DASHBOARD=no` and `DASHBOARD_URL=https://ondemandqa.com/automationreports/`. `Execute.bat` then imports and syncs to Supabase, skips the local server, and opens the team link.
+
+### 9.4 Day to day on the VM
+| To… | Run (as administrator) |
+|---|---|
+| Restart (after code or `.env` changes) | `schtasks /end /tn "Tosca Dashboard"` then `schtasks /run /tn "Tosca Dashboard"` |
+| Check it's running | open `http://127.0.0.1:5000/api/health` on the VM |
+| Update the code | copy the new files, then restart |
+| Remove | `Setup_Dashboard_VM.bat /remove` |

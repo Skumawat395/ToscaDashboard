@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))  # dashboard/
 
 from result_store import (  # noqa: E402
+    classify_list,
     get_execution_results,
     save_execution_run,
     save_new_executions,
@@ -147,6 +148,26 @@ class ResultStoreTests(unittest.TestCase):
         # Importing the same output again adds nothing.
         self.assertEqual(save_new_executions(logs, self.db_path), [])
         self.assertEqual(sync_status(self.db_path)["total_runs"], 3)
+
+    def test_renamed_list_keeps_history_and_skips_old_logs(self):
+        old = dict(self.records[0], Environment_Name="RISE_INDIA", Module_Name="PM_Raise_QA")
+        save_execution_run([old], self.db_path)
+        # After the rename in Tosca, the same log comes back under the new name.
+        renamed = dict(old, Module_Name="PM_RISE_QA")
+        self.assertIsNone(save_execution_run([renamed], self.db_path))
+        row = get_execution_results(self.db_path)[0]
+        self.assertEqual(
+            (row["Project"], row["Module"], row["Environment"], row["ExecutionList"]),
+            ("RISE_INDIA", "PM", "QA", "PM_RISE_QA"),
+        )
+
+    def test_unlisted_list_falls_back_to_tosca_names(self):
+        self.assertEqual(
+            classify_list("NEW_PROJECT", "XX_NEW_LIST"),
+            {"project": "NEW_PROJECT", "module": "XX_NEW_LIST",
+             "environment": "QA", "execution_list": "XX_NEW_LIST"},
+        )
+        self.assertEqual(classify_list("ROW", "ROW_SD")["module"], "SD")
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ from result_store import (
     DATA_DIR,
     DATABASE_FILE,
     get_execution_results,
+    known_projects,
     save_execution_run,
     save_new_executions,
     sync_pending_runs,
@@ -85,7 +86,10 @@ def is_environment(name):
 
     name = name.strip().upper()
 
-    # Current environments in your RawData
+    # Project folders listed in execution_lists.json (RISE_INDIA, ROW, ...)
+    if name in {p.upper() for p in known_projects()}:
+        return True
+
     if name == "ROW":
         return True
 

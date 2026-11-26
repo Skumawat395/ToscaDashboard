@@ -1,0 +1,21 @@
+{
+  "_help": [
+    "How each Tosca execution list is shown on the dashboard.",
+    "Key = execution list name exactly as in Tosca.",
+    "project     = group shown as a card (RISE_INDIA, ROW, ...).",
+    "module      = SAP module code (QM, MM, PM, PP, SD, ...).",
+    "environment = where it ran (QA, SIT, PROD). Lists not listed here use default_environment.",
+    "renamed_from = old list names; their history and duplicate check carry over to this list.",
+    "Adding a list: add a block here AND in tosca/GetResults.tcs."
+  ],
+  "default_environment": "QA",
+  "lists": {
+    "QM_RISE_QA_SeparateExeList": { "project": "RISE_INDIA", "module": "QM", "environment": "QA" },
+    "MM_RISE_QA_SeparateExeList": { "project": "RISE_INDIA", "module": "MM", "environment": "QA" },
+    "PM_RISE_QA":                 { "project": "RISE_INDIA", "module": "PM", "environment": "QA", "renamed_from": ["PM_Raise_QA"] },
+    "PP_RISE_QA":                 { "project": "RISE_INDIA", "module": "PP", "environment": "QA" },
+    "SD_RISE_QA":                 { "project": "RISE_INDIA", "module": "SD", "environment": "QA" },
+    "ROW_MM":                     { "project": "ROW",        "module": "MM", "environment": "QA" },
+    "ROW_SD":                     { "project": "ROW",        "module": "SD", "environment": "QA" }
+  }
+}

@@ -1,0 +1,21 @@
+<!--
+  IIS reverse-proxy rule: https://ondemandqa.com/automationreports  ->  Tosca dashboard.
+
+  Where: the IIS site that serves ondemandqa.com.
+  Needs: IIS "URL Rewrite" and "Application Request Routing (ARR)" modules, with
+         ARR proxy enabled (IIS Manager > server node > Application Request Routing Cache
+         > Server Proxy Settings > tick "Enable proxy" > Apply).
+
+  How:   paste the <rule> below inside <system.webServer><rewrite><rules> of that site's
+         web.config (or add it in IIS Manager > the site > URL Rewrite), then replace
+         DASHBOARD-HOST:
+           - IIS on the dashboard VM itself  -> 127.0.0.1:5000   (data\.env HOST=127.0.0.1)
+           - IIS on another server           -> <vm-name>:5000   (data\.env HOST=0.0.0.0)
+
+  The path keeps /automationreports when forwarded, so data\.env on the VM must have
+  URL_PREFIX=/automationreports.
+-->
+<rule name="Tosca automation reports" stopProcessing="true">
+  <match url="^automationreports(/.*)?$" />
+  <action type="Rewrite" url="http://DASHBOARD-HOST/automationreports{R:1}" />
+</rule>

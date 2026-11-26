@@ -46,6 +46,40 @@ app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_bytes(32)
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+# Set SESSION_COOKIE_SECURE=1 when people open the dashboard over https.
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "").strip().lower() in {"1", "true", "yes"}
+
+# URL_PREFIX serves the dashboard under a sub-path, e.g. /automationreports for
+# https://ondemandqa.com/automationreports. Empty = served at /.
+URL_PREFIX = "/" + os.getenv("URL_PREFIX", "").strip().strip("/") if os.getenv("URL_PREFIX", "").strip("/ ") else ""
+
+
+class _PrefixMiddleware:
+    """Mount the app under URL_PREFIX. The page uses relative URLs, so the
+    prefix itself is redirected to prefix + '/' and anything outside is 404."""
+
+    def __init__(self, wsgi_app, prefix: str):
+        self.wsgi_app, self.prefix = wsgi_app, prefix
+
+    def __call__(self, environ, start_response):
+        path = environ.get("PATH_INFO", "")
+        if path == "/api/health":
+            # Also answered without the prefix, for Execute.bat and monitoring.
+            return self.wsgi_app(environ, start_response)
+        if path in ("", "/", self.prefix):
+            start_response("308 Permanent Redirect", [("Location", self.prefix + "/")])
+            return [b""]
+        if path.startswith(self.prefix + "/"):
+            environ["SCRIPT_NAME"] = environ.get("SCRIPT_NAME", "") + self.prefix
+            environ["PATH_INFO"] = path[len(self.prefix):]
+            return self.wsgi_app(environ, start_response)
+        start_response("404 Not Found", [("Content-Type", "text/plain")])
+        return [f"Not found. The dashboard is at {self.prefix}/".encode()]
+
+
+if URL_PREFIX:
+    app.wsgi_app = _PrefixMiddleware(app.wsgi_app, URL_PREFIX)
+    app.config["SESSION_COOKIE_PATH"] = URL_PREFIX + "/"
 
 
 def login_required(view):
@@ -281,7 +315,31 @@ if __name__ == "__main__":
     print(f"Dashboard HTML: {DASHBOARD_FILE}")
     print(f"Cloud sync     : {sync_status()}")
     print(f"Results source : {os.getenv('RESULTS_SOURCE', 'auto')}")
-    print(f"Open dashboard : http://127.0.0.1:{PORT}")
+    # HOST=127.0.0.1 (default): this PC only. --share or HOST=0.0.0.0: anyone on the network.
+    host = "0.0.0.0" if "--share" in sys.argv[1:] else os.getenv("HOST", "127.0.0.1")
+    print(f"Open dashboard : http://127.0.0.1:{PORT}{URL_PREFIX}/")
+    if os.getenv("DASHBOARD_URL"):
+        print(f"Team link      : {os.getenv('DASHBOARD_URL')}")
+    elif host != "127.0.0.1":
+        import socket
+
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as probe:
+                probe.connect(("10.255.255.255", 1))  # no packet is sent; picks the LAN address
+                lan_ip = probe.getsockname()[0]
+        except OSError:
+            lan_ip = socket.gethostbyname(socket.gethostname())
+        print(f"Share this link: http://{lan_ip}:{PORT}{URL_PREFIX}/   (others on your network)")
+        print(f"            or : http://{socket.gethostname()}:{PORT}{URL_PREFIX}/")
     print("Stop it with   : Ctrl+C here, or python dashboard\\server.py --stop")
-    # debug=False: no reloader child process and no interactive debugger.
-    app.run(host="127.0.0.1", port=PORT, debug=False)
+    try:
+        # Production web server (Windows-friendly). Falls back to Flask's own
+        # server if waitress is not installed.
+        from waitress import serve
+    except ImportError:
+        print("Web server     : Flask development server (pip install waitress for production)")
+        # debug=False: no reloader child process and no interactive debugger.
+        app.run(host=host, port=PORT, debug=False)
+    else:
+        print("Web server     : waitress")
+        serve(app, host=host, port=PORT, threads=8, ident=None)

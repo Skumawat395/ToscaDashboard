@@ -55,7 +55,7 @@ For "=>SUBPARTS:ExecutionEntry" CallOnEach "scripts\\GetIndividualResult.tcs"
 // RISE - PM
 // ==============================================
 
-JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_RISE_QA"
 
 // Get Environment
 cn ..
@@ -63,7 +63,7 @@ cn ..
 get Name
 
 // Go back to PM ExecutionList
-JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_RISE_QA"
 
 // Get Module
 get Name

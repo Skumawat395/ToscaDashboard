@@ -133,8 +133,10 @@ def read_local_database():
         if not testcase or not start:
             continue
         records.append({
-            "Environment": text(row.get("Environment_Name")),
-            "Module": text(row.get("Module_Name")),
+            "Project": text(row.get("Project")),
+            "Environment": text(row.get("Environment")),
+            "Module": text(row.get("Module")),
+            "ExecutionList": text(row.get("ExecutionList")),
             "TestCaseName": testcase,
             "Result": text(row.get("Result")),
             "Month": start.strftime("%Y-%m"),

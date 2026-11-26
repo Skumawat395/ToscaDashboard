@@ -28,7 +28,7 @@ task "Print Report ... ExecutionEntries with detailed logs"
 // RISE - PM
 // =========================
 
-JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_Raise_QA"
+JumpToNode "/Execution/ExecutionLists/RISE_INDIA/2_Review/PM_RISE_QA"
 
 task "Print Report ... ExecutionEntries with detailed logs"
 

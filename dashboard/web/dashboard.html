@@ -693,7 +693,7 @@
     <div class="glow-orb o2"></div>
     <div class="glow-orb o3"></div>
     <div class="login-box">
-      <div class="login-icon">🛡️<img src="/assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
+      <div class="login-icon">🛡️<img src="assets/tf-logo.png" alt="TF" onerror="this.remove()"></div>
       <h1>Tricentis Tosca SAP Release Quality Intelligence Dashboard</h1>
       <div class="login-sub">Sign in to view release quality results</div>
       <div class="login-field">
@@ -715,7 +715,7 @@
   <nav class="sidenav" aria-label="Dashboard sections">
     <div class="sidenav-top">
       <div class="sidenav-brand">
-        <img class="sidenav-logo" src="/assets/tf-logo.png" alt="Thought Frameworks logo" onerror="this.outerHTML='<span class=&quot;sidenav-logo-text&quot;>TF</span>'">
+        <img class="sidenav-logo" src="assets/tf-logo.png" alt="Thought Frameworks logo" onerror="this.outerHTML='<span class=&quot;sidenav-logo-text&quot;>TF</span>'">
         <span class="sidenav-name"><b>Thought</b><span>Frameworks</span></span>
       </div>
     </div>
@@ -753,7 +753,7 @@
           <span>Execution</span>
           <select id="runSelect" disabled><option value="">Loading…</option></select>
         </label>
-        <span class="sync" id="syncStatus" title="When new execution results were last added. The page checks for new results every minute and reloads only when something changed.">
+        <span class="sync" id="syncStatus" style="cursor:pointer" title="When new execution results were last added. The page checks for new results once an hour and reloads only when something changed. Click to check now.">
           <span class="sync-dot"></span><span id="syncText">Connecting…</span>
         </span>
         <button id="logoutBtn" class="nav-btn">⏻ Logout</button>
@@ -815,12 +815,12 @@
         <div class="kpi-value" id="runsNum">–</div>
         <div class="kpi-foot" id="runsFoot">&nbsp;</div>
       </div>
-      <!-- one card per environment, added by renderHero() -->
+      <!-- one card per project, added by renderHero() -->
     </section>
 
     <div class="overview">
       <div class="overview-col">
-        <div class="section-head"><h2>Environments</h2><span class="panel-note">Click a module to see its test cases</span></div>
+        <div class="section-head"><h2>Projects</h2><span class="panel-note">Click a module to see its test cases</span></div>
         <div class="env-grid" id="envGrid"></div>
       </div>
       <div class="overview-col">
@@ -856,8 +856,8 @@
     </div>
     <div class="analytics-grid">
       <section class="panel analytics-panel">
-        <div class="panel-head"><h3>Pass rate by environment</h3><span class="panel-note" id="envTrendNote">Target 90%</span></div>
-        <div class="chart-box env-trend-box"><canvas id="envTrendChart" role="img" aria-label="Pass rate per environment per month"></canvas></div>
+        <div class="panel-head"><h3>Pass rate by project</h3><span class="panel-note" id="envTrendNote">Target 90%</span></div>
+        <div class="chart-box env-trend-box"><canvas id="envTrendChart" role="img" aria-label="Pass rate per project per month"></canvas></div>
       </section>
       <section class="panel analytics-panel">
         <div class="panel-head"><h3>Top 5 failing test cases</h3><span class="panel-note">Failed includes errors</span></div>
@@ -880,7 +880,7 @@
     <div class="view" data-view="reporting" hidden>
     <div class="section-head"><h2>Pass rate by module</h2><span class="panel-note">Green &ge; 90% · amber 60–89% · red &lt; 60% · hover a bar for counts</span></div>
     <section class="panel">
-      <div class="chart-box" id="barBox"><canvas id="barChart" role="img" aria-label="Pass rate by environment and module"></canvas></div>
+      <div class="chart-box" id="barBox"><canvas id="barChart" role="img" aria-label="Pass rate by project and module"></canvas></div>
     </section>
 
     </div>
@@ -901,7 +901,8 @@
     <section class="panel" id="detailPanel">
       <div class="filters">
         <input type="search" id="searchBox" placeholder="Search test cases…" aria-label="Search test cases">
-        <select id="envFilter" aria-label="Environment"><option value="">All environments</option></select>
+        <select id="envFilter" aria-label="Project"><option value="">All projects</option></select>
+        <select id="stageFilter" aria-label="Environment"><option value="">All environments</option></select>
         <select id="modFilter" aria-label="Module"><option value="">All modules</option></select>
         <select id="resFilter" aria-label="Result"><option value="">All results</option><option>Passed</option><option>Failed</option><option>Other</option><option value="Flaky">Flaky only</option></select>
         <button class="nav-btn ghost" id="clearFilters" type="button">Clear filters</button>
@@ -970,7 +971,7 @@ function latestPerDay(list){
   const best = new Map();
   list.forEach(r => {
     const d = toDate(r.StartTime);
-    const key = `${r.Environment}|${r.Module}|${r.TestCaseName}|${dayKey(d)}`;
+    const key = `${r.Project}|${r.Environment}|${r.Module}|${r.TestCaseName}|${dayKey(d)}`;
     const prev = best.get(key);
     if(!prev || (d && (!prev.d || d >= prev.d))) best.set(key, { r, d });
   });
@@ -1082,7 +1083,7 @@ function setSync(ok, text){
   document.getElementById('syncText').textContent = text;
 }
 
-// Every minute the page asks the server for a tiny "version" (row count + newest import time).
+// Once an hour (REFRESH_MINUTES) the page asks the server for a tiny "version" (row count + newest import time).
 // All rows are downloaded again only when that version changes, i.e. when new results were added.
 let lastResultsVersion = null;
 
@@ -1095,12 +1096,17 @@ function fmtUpdated(ts){
 
 async function fetchLive(){
   try{
-    const vRes = await fetch('/api/results-version', { cache:'no-store' });
+    const vRes = await fetch('api/results-version', { cache:'no-store' });
+    if(vRes.status === 401){
+      // Session ended (logged out elsewhere or the server restarted): stop polling.
+      showLogin('Your session has ended. Please log in again.');
+      return;
+    }
     if(!vRes.ok) throw new Error('HTTP ' + vRes.status);
     const ver = await vRes.json();
     if(ver.error) throw new Error(ver.error);
     if(ver.version !== lastResultsVersion){
-      const res = await fetch('/api/results', { cache:'no-store' });
+      const res = await fetch('api/results', { cache:'no-store' });
       if(!res.ok) throw new Error('HTTP ' + res.status);
       const data = await res.json();
       if(data.error || !Array.isArray(data.rows)) throw new Error(data.error || 'Bad response');
@@ -1112,7 +1118,7 @@ async function fetchLive(){
     const src = ver.source === 'supabase' && ver.count > 0 ? 'Supabase' : 'Local database';
     setSync(true, when ? `Last updated: ${when} · ${src}` : src);
   }catch(err){
-    setSync(false, 'Offline · retrying');
+    setSync(false, 'Offline · click to retry');
     if(!allRows.length){
       document.getElementById('monthSubHeading').textContent = 'Unable to load execution results from the server.';
     }
@@ -1195,14 +1201,15 @@ function fillSelect(id, values, allLabel){
 }
 
 function buildFilters(){
-  fillSelect('envFilter', [...new Set(rows.map(r => r.Environment))].sort(), 'All environments');
+  fillSelect('envFilter', [...new Set(rows.map(r => r.Project))].sort(), 'All projects');
+  fillSelect('stageFilter', [...new Set(rows.map(r => r.Environment))].filter(Boolean).sort(), 'All environments');
   const env = document.getElementById('envFilter').value;
-  fillSelect('modFilter', [...new Set(rows.filter(r => !env || r.Environment === env).map(r => r.Module))].sort(), 'All modules');
+  fillSelect('modFilter', [...new Set(rows.filter(r => !env || r.Project === env).map(r => r.Module))].sort(), 'All modules');
 }
 
 function renderHero(){
-  const envs = [...new Set(rows.map(r => r.Environment))].filter(Boolean).sort();
-  const mods = new Set(rows.map(r => `${r.Environment}|${r.Module}`));
+  const envs = [...new Set(rows.map(r => r.Project))].filter(Boolean).sort();
+  const mods = new Set(rows.map(r => `${r.Project}|${r.Module}`));
   const current = reports.get(selectedMonth);
   document.getElementById('heroTitle').textContent = current ? reportName(current)
     : selMonth ? `${monthLabel(selMonth)} · All Executions` : 'No reports yet';
@@ -1216,7 +1223,7 @@ function renderHero(){
   const kpis = document.querySelector('.kpis');
   kpis.querySelectorAll('.kpi-env').forEach(el => el.remove());
   kpis.insertAdjacentHTML('afterbegin', envs.map(e => {
-    const s = tally(rows.filter(r => r.Environment === e));
+    const s = tally(rows.filter(r => r.Project === e));
     return `<div class="kpi kpi-env">
         <div class="kpi-top"><span class="kpi-icon i-env"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><span class="kpi-label" title="${esc(e)}">${esc(e)}</span></div>
         <div class="kpi-value ${s.total ? rateLevel(s.pct) : ''}">${s.total ? s.pct.toFixed(1) + '%' : '–'}</div>
@@ -1238,10 +1245,10 @@ function renderSummary(){
   const pill = document.getElementById('ratePill');
   pill.className = 'rate-pill' + (s.total ? ' ' + rateLevel(s.pct) : '');
   pill.textContent = s.total ? rateWord(s.pct) : '';
-  const envCount = new Set(rows.map(r => r.Environment)).size;
-  const unique = new Set(rows.map(r => `${r.Environment}|${r.Module}|${r.TestCaseName}`)).size;
+  const envCount = new Set(rows.map(r => r.Project)).size;
+  const unique = new Set(rows.map(r => `${r.Project}|${r.Environment}|${r.Module}|${r.TestCaseName}`)).size;
   document.getElementById('totalFoot').textContent = !s.total ? ' '
-    : selectedMonth ? `across ${envCount} environment${envCount === 1 ? '' : 's'}`
+    : selectedMonth ? `across ${envCount} project${envCount === 1 ? '' : 's'}`
     : `${unique.toLocaleString()} unique test cases`;
   document.getElementById('rateLabel').textContent = selectedMonth ? 'Execution pass rate' : 'Overall pass rate';
   // executions done in the selected month
@@ -1261,10 +1268,10 @@ function renderSummary(){
 
 function renderEnvPanels(){
   const grid = document.getElementById('envGrid');
-  const envs = [...new Set(rows.map(r => r.Environment))].sort();
-  if(!envs.length){ grid.innerHTML = '<div class="panel empty">No environments in this report.</div>'; return; }
+  const envs = [...new Set(rows.map(r => r.Project))].sort();
+  if(!envs.length){ grid.innerHTML = '<div class="panel empty">No projects in this report.</div>'; return; }
   grid.innerHTML = envs.map(env => {
-    const envRows = rows.filter(r => r.Environment === env);
+    const envRows = rows.filter(r => r.Project === env);
     const es = tally(envRows);
     const mods = [...new Set(envRows.map(r => r.Module))].sort();
     const body = mods.map(mod => {
@@ -1280,7 +1287,7 @@ function renderEnvPanels(){
     }).join('');
     return `<section class="panel env-card">
       <div class="env-head">
-        <div class="env-title"><span class="kpi-icon i-env"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><div><div class="eyebrow">Environment</div><h3>${esc(env)}</h3></div></div>
+        <div class="env-title"><span class="kpi-icon i-env"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></span><div><div class="eyebrow">Project</div><h3>${esc(env)}</h3></div></div>
         <div class="env-rate"><div class="big ${rateLevel(es.pct)}">${es.pct.toFixed(1)}%</div><span class="rate-pill ${rateLevel(es.pct)}">${rateWord(es.pct)}</span></div>
       </div>
       ${splitBar(es)}
@@ -1304,9 +1311,9 @@ document.getElementById('envGrid').addEventListener('click', (e) => {
 });
 
 function renderCharts(){
-  const items = [...new Set(rows.map(r => `${r.Environment} · ${r.Module}`))].map(k => {
+  const items = [...new Set(rows.map(r => `${r.Project} · ${r.Module}`))].map(k => {
     const [env, mod] = k.split(' · ');
-    return { k, ...tally(rows.filter(r => r.Environment === env && r.Module === mod)) };
+    return { k, ...tally(rows.filter(r => r.Project === env && r.Module === mod)) };
   }).sort((a, b) => b.pct - a.pct || b.total - a.total);
   const box = document.getElementById('barBox');
   box.style.height = Math.max(140, items.length * 34 + 44) + 'px';
@@ -1636,25 +1643,27 @@ function openReportForRow(row){
 function renderTable(){
   const env = document.getElementById('envFilter').value;
   const mod = document.getElementById('modFilter').value;
+  const stage = document.getElementById('stageFilter').value;
   const res = document.getElementById('resFilter').value;
   const q = document.getElementById('searchBox').value.trim().toLowerCase();
   const order = { Failed: 0, Other: 1, Passed: 2 };
   // every execution of each test case in the open month: run count, failures, and flaky (both passed and not passed)
   const hist = new Map();
   (selMonth ? monthRows(selMonth) : rows).forEach(r => {
-    const k = `${r.Environment}|${r.Module}|${r.TestCaseName}`;
+    const k = `${r.Project}|${r.Environment}|${r.Module}|${r.TestCaseName}`;
     if(!hist.has(k)) hist.set(k, { runs: 0, Passed: 0, Failed: 0, Other: 0 });
     const h = hist.get(k); h.runs++; h[normResult(r.Result)]++;
   });
-  const histOf = r => hist.get(`${r.Environment}|${r.Module}|${r.TestCaseName}`) || { runs: 1, Passed: 0, Failed: 0, Other: 0 };
+  const histOf = r => hist.get(`${r.Project}|${r.Environment}|${r.Module}|${r.TestCaseName}`) || { runs: 1, Passed: 0, Failed: 0, Other: 0 };
   const isFlaky = h => h.Passed > 0 && (h.Failed + h.Other) > 0;
   tableList = rows.filter(r =>
-    (!env || r.Environment === env) &&
+    (!env || r.Project === env) &&
     (!mod || r.Module === mod) &&
+    (!stage || r.Environment === stage) &&
     (!res || (res === 'Flaky' ? isFlaky(histOf(r)) : normResult(r.Result) === res)) &&
     (!q || String(r.TestCaseName || '').toLowerCase().includes(q))
   ).sort((a, b) => order[normResult(a.Result)] - order[normResult(b.Result)]
-    || String(a.Environment).localeCompare(String(b.Environment))
+    || String(a.Project).localeCompare(String(b.Project))
     || String(a.Module).localeCompare(String(b.Module))
     || String(a.TestCaseName).localeCompare(String(b.TestCaseName)));
   document.getElementById('tableCount').textContent = rows.length ? `Showing ${tableList.length.toLocaleString()} of ${rows.length.toLocaleString()} · failures first` : '';
@@ -1663,9 +1672,9 @@ function renderTable(){
     wrap.innerHTML = `<div class="empty">${rows.length ? 'No test cases match these filters.' : 'No test cases in this report.'}</div>`;
     return;
   }
-  const head = `<tr><th>Environment / Module</th><th>Test case</th><th>Result</th><th title="All executions of this test case in the selected month">Runs this month</th><th>Executed</th><th class="num">Duration</th>${SHOW_REPORT_LINKS ? '<th>Report</th>' : ''}</tr>`;
+  const head = `<tr><th>Project / Module</th><th>Test case</th><th>Result</th><th title="All executions of this test case in the selected month">Runs this month</th><th>Executed</th><th class="num">Duration</th>${SHOW_REPORT_LINKS ? '<th>Report</th>' : ''}</tr>`;
   const body = tableList.map((r, i) => `<tr>
-    <td class="where"><div class="env-name">${esc(r.Environment)}</div><span class="tag">${esc(r.Module)}</span></td>
+    <td class="where"><div class="env-name">${esc(r.Project)}</div><span class="tag" title="${esc(r.ExecutionList || '')}">${esc(r.Module)}</span> <span class="tag">${esc(r.Environment || '')}</span></td>
     <td class="tc-name">${esc(r.TestCaseName)}${isFlaky(histOf(r)) ? '<span class="tag-flaky" title="Passed in some executions and failed in others this month">Flaky</span>' : ''}</td>
     <td>${badge(r.Result)}</td>
     <td class="runs-cell">${(h => `${h.runs} run${h.runs === 1 ? '' : 's'}${h.runs > 1 && h.Failed + h.Other ? ` · <b>${h.Failed + h.Other} failed</b>` : ''}`)(histOf(r))}</td>
@@ -1694,7 +1703,7 @@ document.getElementById('tableWrap').addEventListener('click', (e) => {
   meter.addEventListener('mouseleave', () => { delete meter.dataset.focus; });
 })();
 
-// ---------- Trends & Analytics: environment pass-rate lines + top failing test cases ----------
+// ---------- Trends & Analytics: project pass-rate lines + top failing test cases ----------
 var envTrendChart;   // var: may be used by renders that run before this line
 var topFailMonths = 6;
 
@@ -1705,13 +1714,13 @@ function renderAnalytics(){
   document.getElementById('envTrendNote').textContent = `Target ${TARGET_PCT}%`;
   document.getElementById('periodNote').textContent = months.length ? `${monthLabel(months[0].month)} – ${monthLabel(months[months.length - 1].month)}` : '';
   if(envTrendChart){ envTrendChart.destroy(); envTrendChart = null; }
-  const envs = [...new Set(months.flatMap(m => m.rows.map(r => r.Environment)))].filter(Boolean).sort();
+  const envs = [...new Set(months.flatMap(m => m.rows.map(r => r.Project)))].filter(Boolean).sort();
   if(months.length && envs.length && window.Chart){
     const datasets = envs.map((env, i) => {
       const c = cssVar(`--env-${i % 5 + 1}`);
       return { label: env, borderColor: c, backgroundColor: c, borderWidth: 2.5, pointRadius: 3.5, pointHoverRadius: 5, cubicInterpolationMode: 'monotone', spanGaps: true,
-        data: months.map(m => { const t = tally(m.rows.filter(r => r.Environment === env)); return t.total ? +t.pct.toFixed(1) : null; }),
-        counts: months.map(m => tally(m.rows.filter(r => r.Environment === env))) };
+        data: months.map(m => { const t = tally(m.rows.filter(r => r.Project === env)); return t.total ? +t.pct.toFixed(1) : null; }),
+        counts: months.map(m => tally(m.rows.filter(r => r.Project === env))) };
     });
     datasets.push({ label: `Target ${TARGET_PCT}%`, data: months.map(() => TARGET_PCT), borderColor: cssVar('--pass'),
       borderDash: [5, 4], borderWidth: 1.5, pointRadius: 0, pointHitRadius: 0, fill: false, isTarget: true });
@@ -1746,8 +1755,8 @@ function renderAnalytics(){
   const period = monthStats().slice(-topFailMonths);
   const map = new Map();
   period.forEach(m => m.rows.forEach(r => {
-    const k = `${r.Environment}|${r.Module}|${r.TestCaseName}`;
-    if(!map.has(k)) map.set(k, { env: r.Environment, mod: r.Module, tc: r.TestCaseName, runs: 0, fails: 0, last: null });
+    const k = `${r.Project}|${r.Environment}|${r.Module}|${r.TestCaseName}`;
+    if(!map.has(k)) map.set(k, { env: r.Project, mod: r.Module, tc: r.TestCaseName, runs: 0, fails: 0, last: null });
     const x = map.get(k); x.runs++;
     if(normResult(r.Result) !== 'Passed'){
       x.fails++;
@@ -1784,10 +1793,10 @@ function renderAll(){
 }
 
 document.getElementById('envFilter').addEventListener('change', () => { buildFilters(); renderTable(); });
-['modFilter','resFilter'].forEach(id => document.getElementById(id).addEventListener('change', renderTable));
+['modFilter','stageFilter','resFilter'].forEach(id => document.getElementById(id).addEventListener('change', renderTable));
 document.getElementById('searchBox').addEventListener('input', renderTable);
 document.getElementById('clearFilters').addEventListener('click', () => {
-  ['envFilter','modFilter','resFilter'].forEach(id => document.getElementById(id).value = '');
+  ['envFilter','modFilter','stageFilter','resFilter'].forEach(id => document.getElementById(id).value = '');
   document.getElementById('searchBox').value = '';
   buildFilters();
   renderTable();
@@ -1809,7 +1818,7 @@ const STEP_TEMPLATES = [
 
 function generateReport(row){
   const rr = normResult(row.Result);
-  const h = hashStr(row.Environment + row.Module + row.TestCaseName);
+  const h = hashStr(row.Project + row.Environment + row.Module + row.TestCaseName);
   const durationTotal = 18 + (h % 42); // seconds, deterministic per test case
   const failStepIdx = rr === 'Failed' ? (2 + (h % (STEP_TEMPLATES.length - 2))) : -1;
 
@@ -1839,7 +1848,7 @@ function generateReport(row){
 
   const log = [
     `[${timestamp}] Starting execution: ${row.TestCaseName}`,
-    `[Env] ${row.Environment} · [Module] ${row.Module}`,
+    `[Project] ${row.Project} · [Env] ${row.Environment} · [Module] ${row.Module}`,
     ...steps.map(s => `[Step] ${s.name} — ${s.status}`),
     rr === 'Failed'
       ? `[ERROR] Execution stopped — see failed step above for details.`
@@ -1878,7 +1887,7 @@ function generatePDFReport(row){
   const wrappedName = doc.splitTextToSize(row.TestCaseName, pageW - 190);
   doc.text(wrappedName, 155, 345);
   doc.setFontSize(10);
-  doc.text(`${row.Environment}  \u00b7  ${row.Module}`, 155, 345 + wrappedName.length * 14 + 10);
+  doc.text(`${row.Project}  \u00b7  ${row.Environment}  \u00b7  ${row.Module}`, 155, 345 + wrappedName.length * 14 + 10);
 
   // ---------- Execution summary page ----------
   doc.addPage();
@@ -1893,8 +1902,10 @@ function generatePDFReport(row){
     head: [['Field', 'Value']],
     body: [
       ['Test Case', row.TestCaseName],
+      ['Project', row.Project],
       ['Environment', row.Environment],
       ['Module', row.Module],
+      ['Execution list', row.ExecutionList || ''],
       ['Result', rpt.rr],
       ['Duration', rpt.durationTotal + 's'],
       ['Executed At', rpt.timestamp],
@@ -1971,7 +1982,7 @@ function generatePDFReport(row){
 function openReport(row){
   const rpt = generateReport(row);
   document.getElementById('reportTitle').textContent = row.TestCaseName;
-  document.getElementById('reportSub').textContent = `${row.Environment} · ${row.Module} — executed via TCShell`;
+  document.getElementById('reportSub').textContent = `${row.Project} · ${row.Environment} · ${row.Module} — executed via TCShell`;
 
   const cls = rpt.rr==='Passed'?'b-pass':rpt.rr==='Failed'?'b-fail':'b-other';
   document.getElementById('reportMeta').innerHTML = `
@@ -2023,15 +2034,38 @@ function grantAccess(){
   loginScreen.style.display = 'none';
   dashboardContent.style.display = 'block';
   if(!liveRefreshTimer){
-    fetchLive();
-    liveRefreshTimer = setInterval(fetchLive, 60000);
+    checkNow();
+    // The timer itself makes no server call: it only checks whether an hour has passed.
+    liveRefreshTimer = setInterval(checkIfDue, 60000);
   }
 }
+
+// How often the page asks the server for new results. New results only arrive
+// after Execute.bat, so once an hour is enough. Click the status text to check now.
+const REFRESH_MINUTES = 60;
+let lastCheckAt = 0;
+
+function checkNow(){
+  lastCheckAt = Date.now();
+  fetchLive();
+}
+
+function checkIfDue(){
+  // A background tab never calls the server.
+  if(!document.hidden && Date.now() - lastCheckAt >= REFRESH_MINUTES * 60000) checkNow();
+}
+
+document.getElementById('syncStatus').addEventListener('click', () => { if(liveRefreshTimer) checkNow(); });
+
+// Coming back to the tab checks only if the hour has passed meanwhile.
+document.addEventListener('visibilitychange', () => {
+  if(liveRefreshTimer) checkIfDue();
+});
 
 async function attemptLogin(){
   loginError.textContent = '';
   try{
-    const response = await fetch('/api/login', {
+    const response = await fetch('api/login', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({username: loginUser.value.trim(), password: loginPass.value})
@@ -2043,7 +2077,7 @@ async function attemptLogin(){
     }
     loginPass.value = '';
     if(new URLSearchParams(window.location.search).get('next') === '/execution'){
-      window.location.assign('/execution');
+      window.location.assign('execution');
       return;
     }
     grantAccess();
@@ -2058,27 +2092,32 @@ document.getElementById('loginBtn').addEventListener('click', attemptLogin);
 }));
 
 document.getElementById('logoutBtn').addEventListener('click', async () => {
-  await fetch('/api/logout', {method: 'POST'}).catch(() => {});
-  if(window.location.pathname === '/execution'){
-    window.location.assign('/');
+  await fetch('api/logout', {method: 'POST'}).catch(() => {});
+  if(window.location.pathname.endsWith('/execution')){
+    window.location.assign('./');
     return;
   }
+  showLogin('');
+});
+
+// Back to the login screen; the page stops asking the server for results.
+function showLogin(message){
   if(liveRefreshTimer){
     clearInterval(liveRefreshTimer);
     liveRefreshTimer = null;
   }
   loginUser.value = '';
   loginPass.value = '';
-  loginError.textContent = '';
+  loginError.textContent = message || '';
   selectedMonth = null;
   selMonth = null;
   userPickedReport = false;
   lastResultsVersion = null;
   dashboardContent.style.display = 'none';
   loginScreen.style.display = 'flex';
-});
+}
 
-fetch('/api/auth-status')
+fetch('api/auth-status')
   .then(response => response.ok ? response.json() : null)
   .then(result => { if(result && result.authenticated) grantAccess(); })
   .catch(() => {});

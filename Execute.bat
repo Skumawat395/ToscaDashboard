@@ -35,7 +35,16 @@ if not exist "data\.env" (
     goto :fail
 )
 
-python -c "import flask, openpyxl, dotenv, supabase" >nul 2>&1
+:: Dashboard settings: START_LOCAL_DASHBOARD=no when the dashboard runs on the VM,
+:: DASHBOARD_URL = the team link (e.g. https://ondemandqa.com/automationreports/).
+set "START_LOCAL_DASHBOARD=yes"
+set "DASHBOARD_URL=http://127.0.0.1:5000"
+for /f "usebackq eol=# tokens=1,* delims==" %%A in ("data\.env") do (
+    if /i "%%A"=="START_LOCAL_DASHBOARD" if not "%%B"=="" set "START_LOCAL_DASHBOARD=%%B"
+    if /i "%%A"=="DASHBOARD_URL" if not "%%B"=="" set "DASHBOARD_URL=%%B"
+)
+
+python -c "import flask, openpyxl, dotenv, supabase, waitress" >nul 2>&1
 if errorlevel 1 (
     echo Python packages are missing - installing them now...
     python -m pip install -r "dashboard\requirements.txt"
@@ -50,11 +59,13 @@ echo           OK
 :: 1. Read every execution log of every execution entry from Tosca
 :: ---------------------------------------------------------------
 echo [STEP 1/4] Reading Tosca execution results (this can take a few minutes)...
-call "tosca\run_tcshell.bat" > "data\RawData.txt"
+:: Written to a temporary file first, so a failed run never wipes the last good RawData.txt.
+call "%~dp0tosca\run_tcshell.bat" > "data\RawData.new.txt"
 if errorlevel 1 (
-    echo ERROR: TCShell failed - see the end of data\RawData.txt. Nothing was imported.
+    echo ERROR: TCShell failed. Its output is in data\RawData.new.txt. Nothing was imported.
     goto :fail
 )
+move /y "data\RawData.new.txt" "data\RawData.txt" >nul
 
 :: ---------------------------------------------------------------
 :: 2. Store only NEW results, then sync to Supabase
@@ -78,8 +89,12 @@ if errorlevel 1 (
 )
 
 :: ---------------------------------------------------------------
-:: 4. Start the server if it isn't running, then open the dashboard
+:: 4. Restart the local server (skipped when the dashboard runs on the VM)
 :: ---------------------------------------------------------------
+if /i "%START_LOCAL_DASHBOARD%"=="no" (
+    echo [STEP 4/4] Dashboard runs on the VM - results are already in Supabase.
+    goto :done
+)
 echo [STEP 4/4] Restarting the dashboard server...
 :: Stop any earlier server first so exactly one runs, with the latest code and .env.
 python "dashboard\server.py" --stop
@@ -89,11 +104,13 @@ if errorlevel 1 (
     echo ERROR: The dashboard server did not start. Run "python dashboard\server.py" to see why.
     goto :fail
 )
-if not defined AUTO start "" "http://127.0.0.1:5000"
+
+:done
+if not defined AUTO start "" "%DASHBOARD_URL%"
 
 echo ===================================================
 echo   Pipeline finished successfully
-echo   Dashboard: http://127.0.0.1:5000
+echo   Dashboard: %DASHBOARD_URL%
 echo ===================================================
 if not defined AUTO pause
 exit /b 0

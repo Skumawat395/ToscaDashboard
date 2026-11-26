@@ -105,11 +105,62 @@ def initialize_database(db_path: Path | str = DATABASE_FILE) -> None:
         )
 
 
+EXECUTION_LISTS_FILE = Path(
+    os.getenv("TOSCA_EXECUTION_LISTS_FILE") or BASE_DIR / "execution_lists.json"
+)
+
+
+def _load_execution_lists(path: Path = EXECUTION_LISTS_FILE) -> tuple[dict, dict, str]:
+    """Return (lists by name, old name -> current name, default environment)."""
+    try:
+        config = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        config = {}
+    lists = config.get("lists") or {}
+    renamed = {
+        old: name
+        for name, info in lists.items()
+        for old in (info.get("renamed_from") or [])
+    }
+    return lists, renamed, str(config.get("default_environment") or "QA")
+
+
+_EXECUTION_LISTS, _RENAMED_LISTS, _DEFAULT_ENVIRONMENT = _load_execution_lists()
+
+
+def current_list_name(list_name: str) -> str:
+    """Map an old (renamed) execution list name to its current name."""
+    return _RENAMED_LISTS.get(list_name, list_name)
+
+
+def known_projects() -> set[str]:
+    return {str(info.get("project")) for info in _EXECUTION_LISTS.values() if info.get("project")}
+
+
+def classify_list(folder_name: str, list_name: str) -> dict[str, str]:
+    """Project / module / environment for one execution list (execution_lists.json).
+
+    Lists missing from the file still show up: project = the Tosca folder name,
+    module = the list name, environment = default_environment.
+    """
+    name = current_list_name(list_name)
+    info = _EXECUTION_LISTS.get(name) or {}
+    return {
+        "project": str(info.get("project") or folder_name),
+        "module": str(info.get("module") or name),
+        "environment": str(info.get("environment") or _DEFAULT_ENVIRONMENT),
+        "execution_list": name,
+    }
+
+
 def _result_identity(record: dict[str, Any]) -> tuple[str, str, str, str | None]:
-    """One Tosca test case log = environment + module + test case + start time."""
+    """One Tosca test case log = folder + execution list + test case + start time.
+
+    Renamed lists use their current name, so logs stored under the old name are
+    still recognised as already imported."""
     return (
         str(record.get("Environment_Name") or ""),
-        str(record.get("Module_Name") or ""),
+        current_list_name(str(record.get("Module_Name") or "")),
         str(record.get("TestCase_Name") or ""),
         _timestamp(record.get("StartTime")),
     )
@@ -124,12 +175,13 @@ def _new_records(
     """Return only the logs not stored yet (also drops duplicates within the batch)."""
     initialize_database(db_path)
     with _connection(db_path) as connection:
-        existing = set(
-            connection.execute(
+        existing = {
+            (env, current_list_name(lst), tc, start)
+            for env, lst, tc, start in connection.execute(
                 "SELECT environment_name, module_name, testcase_name, start_time "
                 "FROM test_case_results"
             ).fetchall()
-        )
+        }
 
     new_records = []
     for record in records:
@@ -280,14 +332,19 @@ def get_execution_results(db_path: Path | str = DATABASE_FILE) -> list[dict[str,
 def _to_dashboard_row(item: dict[str, Any]) -> dict[str, Any]:
     """Add the field aliases used by the dashboard HTML and the reporting scripts."""
     month = item["start_time"][:7] if item.get("start_time") else None
+    # environment_name / module_name hold the raw Tosca folder and execution list
+    # names; execution_lists.json turns them into project / module / environment.
+    info = classify_list(item["environment_name"], item["module_name"])
     item.update(
         {
             "Environment_Name": item["environment_name"],
             "Module_Name": item["module_name"],
             "TestCase_Name": item["testcase_name"],
             # Field names read by web/dashboard.html
-            "Environment": item["environment_name"],
-            "Module": item["module_name"],
+            "Project": info["project"],
+            "Environment": info["environment"],
+            "Module": info["module"],
+            "ExecutionList": info["execution_list"],
             "TestCaseName": item["testcase_name"],
             "Result": item["result"],
             "StartTime": item["start_time"],
@@ -295,8 +352,10 @@ def _to_dashboard_row(item: dict[str, Any]) -> dict[str, Any]:
             "CreatedBy": item["created_by"],
             "CreatedAt": item["created_at"],
             "Month": month,
-            "environment": item["environment_name"],
-            "module": item["module_name"],
+            "project": info["project"],
+            "environment": info["environment"],
+            "module": info["module"],
+            "executionList": info["execution_list"],
             "testCase": item["testcase_name"],
             "result": item["result"],
             "startTime": item["start_time"],
